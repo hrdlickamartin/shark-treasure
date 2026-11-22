@@ -1,17 +1,18 @@
 {
   "expo": {
-    "name": "shark-treasure-tmp",
-    "slug": "shark-treasure-tmp",
+    "name": "Shark Treasure",
+    "slug": "shark-treasure",
     "version": "1.0.0",
-    "orientation": "portrait",
+    "orientation": "default",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "requireFullScreen": false
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#0879D8",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
@@ -19,7 +20,24 @@
       "predictiveBackGestureEnabled": false
     },
     "web": {
-      "favicon": "./assets/favicon.png"
-    }
+      "favicon": "./assets/favicon.png",
+      "name": "Shark Treasure",
+      "themeColor": "#063B78",
+      "backgroundColor": "#063B78"
+    },
+    "plugins": [
+      "expo-audio",
+      "expo-font",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#063B78",
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 280
+        }
+      ],
+      "expo-asset"
+    ],
+    "backgroundColor": "#063B78"
   }
 }

@@ -1,0 +1,15 @@
+export const PX_PER_M = 10;
+export const CHUNK_W = 480;
+export const SURFACE_Y = 0;
+export const DIVER_MIN_Y = 16;
+export const SURFACE_SAFE = 70;
+export const DOCK_RADIUS_X = 80;
+export const DOCK_DEPTH = 42;
+export const MAX_DT = 1 / 20;
+export const DIVER_RADIUS = 20;
+export const DIVER_ACCEL = 620;
+export const BOAT_DECK_Y = -30;
+export const MAX_HEALTH = 100;
+export const SONAR_DURATION = 4;
+export const SONAR_COOLDOWN = 10;
+export const ACTIVE_RANGE = 1600;
