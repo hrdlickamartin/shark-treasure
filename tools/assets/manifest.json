@@ -1,0 +1,385 @@
+{
+  "style": "Modern Stylized 2D game art with subtle Cartoon Adventure personality, polished, colorful, premium, playful but never childish; clean consistent dark navy outlines; smooth soft shading; rounded shapes; strong contrast; readable at small size. Fully transparent background, no ground shadow, no text, no frame, no scenery, centered, subject fills most of the canvas. Avoid photorealism, pixel art, flat corporate vector.",
+  "backgroundStyle": "wide horizontally seamless underwater PARALLAX BACKGROUND layer for a 2D side-scrolling game. Only distant, soft, slightly hazy background elements, lower contrast than gameplay so foreground sprites stay readable, no characters, no treasure, no text, no UI, no water surface visible. Left and right edges must match so it tiles horizontally. Modern Stylized 2D cartoon adventure style, smooth soft shading.",
+  "sprites": {
+    "boat": {
+      "prompt": "a small stylized boat side view facing RIGHT: white hull with red and orange stripes and details, blue windows on small cabin, a red flag on a mast, orange life ring on the side, a rope ladder hanging down the side, waterline at the bottom of the hull",
+      "maxSize": 640
+    },
+    "boat_1": {
+      "prompt": "an UPGRADED version of the same boat as the reference, side view facing RIGHT, same white hull with red and orange stripes, blue windows, red flag, orange life ring. Upgrade level 1: slightly longer hull and a big shiny red outboard motor at the stern with a white propeller wake. Waterline at the bottom of the hull",
+      "references": [
+        "boat"
+      ],
+      "maxSize": 640
+    },
+    "boat_2": {
+      "prompt": "an UPGRADED version of the same boat as the reference, side view facing RIGHT, same white hull with red and orange stripes, blue windows, red flag, orange life ring. Upgrade level 2: like level 1 plus a white radar dome and sonar antenna mast on the cabin roof with a small green screen glow in the window. Waterline at the bottom of the hull",
+      "references": [
+        "boat"
+      ],
+      "maxSize": 640
+    },
+    "boat_3": {
+      "prompt": "an UPGRADED version of the same boat as the reference, side view facing RIGHT, same white hull with red and orange stripes, blue windows, red flag, orange life ring. Upgrade level 3: bigger two-tone cabin, two bright yellow searchlights on the roof, radar dome, a diving platform at the stern with a ladder. Waterline at the bottom of the hull",
+      "references": [
+        "boat"
+      ],
+      "maxSize": 640
+    },
+    "boat_4": {
+      "prompt": "an UPGRADED version of the same boat as the reference, side view facing RIGHT, same white hull with red and orange stripes, blue windows, red flag, orange life ring. Upgrade level 4: larger expedition boat with a yellow crane winch on the deck, red and white diver-down flag, radar, searchlights, rescue ring, longer hull. Waterline at the bottom of the hull",
+      "references": [
+        "boat"
+      ],
+      "maxSize": 640
+    },
+    "boat_5": {
+      "prompt": "an UPGRADED version of the same boat as the reference, side view facing RIGHT, same white hull with red and orange stripes, blue windows, red flag, orange life ring. Upgrade level 5: premium deep-sea expedition ship, two decks, gold trim accents, big radar and sonar, searchlights, crane, small yellow submarine on the deck, the largest and most impressive version. Waterline at the bottom of the hull",
+      "references": [
+        "boat"
+      ],
+      "maxSize": 640
+    },
+    "chest_common": {
+      "prompt": "a simple closed wooden treasure chest with iron bands, three-quarter front view",
+      "maxSize": 400
+    },
+    "chest_epic": {
+      "prompt": "a closed ornate treasure chest with purple gemstones and a strong violet aura glow, three-quarter front view",
+      "maxSize": 400
+    },
+    "chest_legendary": {
+      "prompt": "a closed legendary golden treasure chest encrusted with jewels, intense golden aura with sparkling particles, three-quarter front view",
+      "maxSize": 400
+    },
+    "chest_mystery": {
+      "prompt": "a closed mysterious treasure chest made of dark teal wood with a big glowing question mark symbol on the front, three-quarter front view",
+      "maxSize": 400
+    },
+    "chest_open": {
+      "prompt": "an opened wooden treasure chest overflowing with gold coins and gems, coins spilling out, three-quarter front view",
+      "maxSize": 400
+    },
+    "chest_rare": {
+      "prompt": "a closed treasure chest with ornate gold details and a soft blue light glow aura, three-quarter front view",
+      "maxSize": 400
+    },
+    "chest_uncommon": {
+      "prompt": "a closed treasure chest with silver metal reinforcements and a soft green glow aura around it, three-quarter front view",
+      "maxSize": 400
+    },
+    "cloud": {
+      "prompt": "a single fluffy white cartoon cloud",
+      "maxSize": 320
+    },
+    "coin": {
+      "prompt": "a single shiny gold coin with a small shark emblem, front view",
+      "maxSize": 160
+    },
+    "coral_orange": {
+      "prompt": "an orange fan coral, front view, base at bottom",
+      "maxSize": 400
+    },
+    "coral_pink": {
+      "prompt": "a pink branching coral cluster, front view, base at bottom",
+      "maxSize": 400
+    },
+    "coral_purple": {
+      "prompt": "a purple tube coral cluster with small sea anemones, front view, base at bottom",
+      "maxSize": 400
+    },
+    "diver_carry": {
+      "prompt": "the scuba diver character swimming horizontally to the RIGHT while hugging a small wooden treasure chest with both arms in front of the chest, side view, determined face",
+      "references": [
+        "diver_swim1"
+      ],
+      "maxSize": 400,
+      "facing": "right",
+      "facingCheck": true,
+      "rig": {
+        "cuts": [
+          0.4,
+          0.22
+        ],
+        "pivots": [
+          0.66,
+          0.66
+        ]
+      }
+    },
+    "diver_carry_q": {
+      "prompt": "the exact same scuba diver hugging a treasure chest as the reference in a THREE-QUARTER FRONT VIEW, mid-turn toward the viewer, rotated about 45 degrees so its front faces the camera and slightly to the right, clear depth and foreshortening",
+      "references": [
+        "diver_carry"
+      ],
+      "maxSize": 400
+    },
+    "diver_climb": {
+      "prompt": "the exact same scuba diver CLIMBING UP A LADDER, side view facing RIGHT toward the ladder (ladder itself NOT drawn), body upright and close, both hands reaching up gripping an invisible rung above the head, one knee raised high stepping up, water drops dripping from the suit",
+      "references": [
+        "diver_idle",
+        "diver_swim1"
+      ],
+      "maxSize": 400
+    },
+    "diver_hurt": {
+      "prompt": "the scuba diver character recoiling after being hit, body bent backward, arms flailing, surprised wide eyes behind goggles, side view facing RIGHT, small comic stars",
+      "references": [
+        "diver_swim1"
+      ],
+      "maxSize": 400
+    },
+    "diver_idle": {
+      "prompt": "the scuba diver character floating upright in idle pose, slight lean, side view facing RIGHT, arms relaxed, fins below, small bubbles from regulator",
+      "references": [
+        "diver_swim1"
+      ],
+      "maxSize": 400
+    },
+    "diver_swim1": {
+      "prompt": "the scuba diver character swimming horizontally to the RIGHT, side view, full body, dark navy diving suit with bright yellow/orange accents, big expressive goggles, yellow oxygen tank on back, yellow fins, gloves",
+      "maxSize": 400,
+      "facing": "right",
+      "facingCheck": true,
+      "rig": {
+        "cuts": [
+          0.37,
+          0.22
+        ],
+        "pivots": [
+          0.62,
+          0.62
+        ]
+      }
+    },
+    "diver_swim_q": {
+      "prompt": "the exact same scuba diver character swimming as the reference in a THREE-QUARTER FRONT VIEW, mid-turn toward the viewer, rotated about 45 degrees so its front faces the camera and slightly to the right, clear depth and foreshortening",
+      "references": [
+        "diver_swim1"
+      ],
+      "maxSize": 400
+    },
+    "fish_blue": {
+      "prompt": "a small blue tang fish, side view facing RIGHT",
+      "maxSize": 400
+    },
+    "fish_clown": {
+      "prompt": "a small orange and white striped clownfish, side view facing RIGHT",
+      "maxSize": 400
+    },
+    "fish_yellow": {
+      "prompt": "a small yellow tang fish, side view facing RIGHT",
+      "maxSize": 400
+    },
+    "icon_engine": {
+      "prompt": "a game UI icon of a red boat outboard motor engine, chunky",
+      "maxSize": 192
+    },
+    "icon_fins": {
+      "prompt": "a game UI icon of a pair of yellow diving fins, chunky",
+      "maxSize": 192
+    },
+    "icon_heart": {
+      "prompt": "a game UI icon of a glossy red heart, chunky",
+      "maxSize": 192
+    },
+    "icon_light": {
+      "prompt": "a game UI icon of a yellow diving flashlight emitting a beam, chunky",
+      "maxSize": 192
+    },
+    "icon_net": {
+      "prompt": "a game UI icon of a mesh treasure net bag holding gold coins, chunky",
+      "maxSize": 192
+    },
+    "icon_o2": {
+      "prompt": "a game UI icon of a glossy cyan oxygen bubble with the letters O2 inside, chunky",
+      "maxSize": 192
+    },
+    "icon_sonar": {
+      "prompt": "a game UI icon of a round green sonar radar screen with a sweep line and dots, chunky",
+      "maxSize": 192
+    },
+    "icon_suit": {
+      "prompt": "a game UI icon of a dark navy wetsuit with yellow stripes, front view, chunky",
+      "maxSize": 192
+    },
+    "icon_tank": {
+      "prompt": "a game UI icon of a yellow scuba oxygen tank with a navy valve, chunky",
+      "maxSize": 192
+    },
+    "icon_trophy": {
+      "prompt": "a game UI icon of a golden trophy cup, chunky",
+      "maxSize": 192
+    },
+    "icon_vest": {
+      "prompt": "a game UI icon of an orange inflatable buoyancy diving vest, chunky",
+      "maxSize": 192
+    },
+    "island": {
+      "prompt": "a small tropical island with sandy beach, two palm trees and green hill, side view, sitting on water line at bottom",
+      "maxSize": 640
+    },
+    "jellyfish": {
+      "prompt": "a cute but dangerous pink-purple jellyfish with glowing tentacles, front view",
+      "maxSize": 400
+    },
+    "kelp": {
+      "prompt": "a very tall kelp stalk, green-olive with leaf blades, base at bottom, front view",
+      "maxSize": 512
+    },
+    "logo": {
+      "prompt": "game logo: the words 'SHARK' on the first line and 'TREASURE' on the second line in big chunky rounded bold letters, SHARK in light-to-turquoise blue gradient with navy outline, TREASURE in gold-orange gradient with navy outline, a cartoon shark fin peeking above the letters and a small open treasure chest with gold next to the text, below a small dark blue ribbon banner with the text 'Dive. Explore. Collect. Return!'",
+      "maxSize": 900
+    },
+    "mine": {
+      "prompt": "a dark naval sea mine sphere with spikes and a red warning light, chained, front view",
+      "maxSize": 400
+    },
+    "rock_big": {
+      "prompt": "a large rounded underwater rock formation with some moss and small barnacles, side view, base at bottom",
+      "maxSize": 400
+    },
+    "rock_small": {
+      "prompt": "a cluster of small rounded underwater rocks with a starfish, side view, base at bottom",
+      "maxSize": 400
+    },
+    "ruins": {
+      "prompt": "ancient underwater stone ruins: a broken arch with two pillars and carved glyphs, moss, side view, base at bottom",
+      "maxSize": 640
+    },
+    "seaweed": {
+      "prompt": "a tall wavy green seaweed plant with several leaves, base at bottom, front view",
+      "maxSize": 400
+    },
+    "shark_deep": {
+      "prompt": "a deep sea shark, side view facing RIGHT, very dark navy-purple body with bioluminescent cyan spots and glowing cyan eyes, stylized teeth, swimming pose",
+      "maxSize": 512,
+      "facing": "right",
+      "facingCheck": true,
+      "rig": {
+        "cuts": [
+          0.43,
+          0.21
+        ],
+        "pivots": [
+          0.56,
+          0.526
+        ]
+      }
+    },
+    "shark_deep_q": {
+      "prompt": "the exact same cartoon deep sea shark with glowing spots as the reference in a THREE-QUARTER FRONT VIEW, mid-turn toward the viewer, rotated about 45 degrees so its front faces the camera and slightly to the right, clear depth and foreshortening",
+      "references": [
+        "shark_deep"
+      ],
+      "maxSize": 512
+    },
+    "shark_great": {
+      "prompt": "a large great white shark, side view facing RIGHT, dark slate-blue back, white belly, wide toothy grin with stylized teeth, menacing but cartoon, swimming pose",
+      "maxSize": 512,
+      "facing": "right",
+      "facingCheck": true,
+      "rig": {
+        "cuts": [
+          0.42,
+          0.2
+        ],
+        "pivots": [
+          0.6,
+          0.623
+        ]
+      }
+    },
+    "shark_great_q": {
+      "prompt": "the exact same cartoon great white shark as the reference in a THREE-QUARTER FRONT VIEW, mid-turn toward the viewer, rotated about 45 degrees so its front faces the camera and slightly to the right, clear depth and foreshortening",
+      "references": [
+        "shark_great"
+      ],
+      "maxSize": 512
+    },
+    "shark_hammer": {
+      "prompt": "a hammerhead shark, side view facing RIGHT, distinctive hammer-shaped head, olive gray back, pale belly, expressive eyes, swimming pose",
+      "maxSize": 512,
+      "facing": "right",
+      "facingCheck": true,
+      "rig": {
+        "cuts": [
+          0.45,
+          0.22
+        ],
+        "pivots": [
+          0.46,
+          0.472
+        ]
+      }
+    },
+    "shark_hammer_q": {
+      "prompt": "the exact same cartoon hammerhead shark as the reference in a THREE-QUARTER FRONT VIEW, mid-turn toward the viewer, rotated about 45 degrees so its front faces the camera and slightly to the right, clear depth and foreshortening",
+      "references": [
+        "shark_hammer"
+      ],
+      "maxSize": 512
+    },
+    "shark_reef": {
+      "prompt": "a reef shark, side view facing RIGHT, medium size, blue-gray back with darker fin tips, white belly, expressive angry eyes, stylized teeth, swimming pose",
+      "maxSize": 512,
+      "facing": "right",
+      "facingCheck": true,
+      "rig": {
+        "cuts": [
+          0.45,
+          0.2
+        ],
+        "pivots": [
+          0.48,
+          0.498
+        ]
+      }
+    },
+    "shark_reef_q": {
+      "prompt": "the exact same cartoon reef shark as the reference in a THREE-QUARTER FRONT VIEW, mid-turn toward the viewer, rotated about 45 degrees so its front faces the camera and slightly to the right, clear depth and foreshortening",
+      "references": [
+        "shark_reef"
+      ],
+      "maxSize": 512
+    },
+    "shark_small": {
+      "prompt": "a small fast slim shark, side view facing RIGHT, light gray-blue back and pale belly, big expressive eyes, mouth slightly open with stylized teeth, swimming pose, not scary but dangerous",
+      "maxSize": 512,
+      "facing": "right",
+      "facingCheck": true,
+      "rig": {
+        "cuts": [
+          0.45,
+          0.2
+        ],
+        "pivots": [
+          0.556,
+          0.546
+        ]
+      }
+    },
+    "shark_small_q": {
+      "prompt": "the exact same small cartoon shark as the reference in a THREE-QUARTER FRONT VIEW, mid-turn toward the viewer, rotated about 45 degrees so its front faces the camera and slightly to the right, clear depth and foreshortening",
+      "references": [
+        "shark_small"
+      ],
+      "maxSize": 512
+    },
+    "urchin": {
+      "prompt": "a black spiky sea urchin, front view",
+      "maxSize": 400
+    },
+    "wreck": {
+      "prompt": "a sunken old wooden pirate shipwreck lying on its side, broken mast, holes in hull, side view, base at bottom",
+      "maxSize": 640
+    }
+  },
+  "backgrounds": {
+    "bg_shallow": "Shallow Reef 0-20 m: bright turquoise azure water, sun light rays from top, distant sandy dunes and faint coral silhouettes at the bottom, small far fish schools",
+    "bg_coral": "Coral Bay 20-50 m: blue water, distant colorful coral reef silhouettes and rocky formations, cave openings, soft light rays",
+    "bg_wreck": "Shipwreck 50-100 m: darker blue teal water, distant silhouettes of sunken ships and debris, metal wreckage, faint light from above",
+    "bg_deep": "Deep Ocean 100 m+: dark navy blue water but not pitch black, distant bioluminescent plants with cyan glow, ancient ruins silhouettes, floating glowing particles"
+  }
+}

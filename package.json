@@ -22,9 +22,11 @@
     "react-native-web": "^0.21.4"
   },
   "devDependencies": {
+    "@types/node": "^26.6.6",
     "@types/react": "~19.3.0",
     "eslint": "^9.0.0",
     "eslint-config-expo": "~58.0.4",
+    "tsx": "^4.23.15",
     "typescript": "~6.0.3"
   },
   "scripts": {
@@ -32,7 +34,14 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "lint": "expo lint"
+    "lint": "expo lint",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tests",
+    "test": "tsx --test tests/*.test.ts",
+    "check:fonts": "node tools/checks/fonts.mjs",
+    "check:assets": "python3 tools/assets/assets.py check",
+    "assets:build": "python3 tools/assets/assets.py build",
+    "check": "npm run typecheck && npm run lint && npm run test && npm run check:fonts && npm run check:assets",
+    "prepare": "git config core.hooksPath .githooks || true"
   },
   "private": true
 }
