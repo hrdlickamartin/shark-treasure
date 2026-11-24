@@ -1,5 +1,5 @@
 import * as Haptics from 'expo-haptics';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AppState, Platform, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { audio, type MusicName } from './audio/audio';
@@ -10,7 +10,7 @@ import { OCEAN_ORDER, OCEANS, reefShift, weekIndex, WORLD_OCEANS, type OceanId }
 import { pipKey } from './game/systems/drone';
 import { cycleKit, applyKit } from './game/systems/kit';
 import { SLOTS, MODULES } from './progression/modules';
-import { activeModules, expansionOn, huntProps, riftProps, weeklyOcean, weeklySeed } from './progression/tides';
+import { activeModules, equippedModules, expansionOn, huntProps, riftProps, weeklyOcean, weeklySeed } from './progression/tides';
 import { Port } from './ui/Port';
 import { discountFor } from './progression/factions';
 import { Modes } from './ui/Modes';
@@ -140,14 +140,16 @@ export function GameScreen() {
     audio.setSfxEnabled(save.settings.sfx);
   }, [save.settings.music, save.settings.sfx]);
 
+  const boatModules = useMemo(() => equippedModules(save.upgrades.boat, save.modules.equipped), [save.upgrades.boat, save.modules.equipped]);
+
   useEffect(() => {
     const game = gameRef.current;
     if (!game) return;
-    game.stats = statsFor(save.upgrades, save.relics, game.challenge, { expedition: save.expedition, perks: save.perks, research: save.research, mods: save.mods.equipped, modules: activeModules(save), tideEnding: save.tideEnding });
+    game.stats = statsFor(save.upgrades, save.relics, game.challenge, { expedition: save.expedition, perks: save.perks, research: save.research, mods: save.mods.equipped, modules: boatModules, tideEnding: save.tideEnding });
     game.ownedRelics = save.relics;
     game.skin = save.skin;
     if (game.phase !== 'dive') game.diver.oxygen = game.stats.oxygenMax;
-  }, [save.upgrades, save.relics, save.skin, save.expedition, save.perks, save.research, save.mods.equipped, save.modules.equipped, save.tideEnding]);
+  }, [save.upgrades, save.relics, save.skin, save.expedition, save.perks, save.research, save.mods.equipped, boatModules, save.tideEnding]);
 
   const showToast = useCallback((text: string, seconds = 2.6) => setToast({ text, until: Date.now() + seconds * 1000 }), []);
 

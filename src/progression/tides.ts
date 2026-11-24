@@ -262,8 +262,12 @@ export function equipModule(save: SaveData, slot: ModuleSlot, id: ModuleId | nul
 }
 
 export function activeModules(save: SaveData): SaveData['modules']['equipped'] {
-  const open = openSlots(save.upgrades.boat);
-  return Object.fromEntries(Object.entries(save.modules.equipped).filter(([slot]) => open.includes(slot as ModuleSlot)));
+  return equippedModules(save.upgrades.boat, save.modules.equipped);
+}
+
+export function equippedModules(boat: number, equipped: SaveData['modules']['equipped']): SaveData['modules']['equipped'] {
+  const open = openSlots(boat);
+  return Object.fromEntries(Object.entries(equipped).filter(([slot]) => open.includes(slot as ModuleSlot)));
 }
 
 export function claimContract(save: SaveData, day: string, id: string): SaveData | null {
