@@ -37,8 +37,17 @@ function Segments({ name, index, cuts, pivots, angles, width, height }: { name: 
 }
 
 export function RigSprite({ name, x, y, width, scaleX, rotate, angles, opacity = 1, scaleY = 1 }: Props) {
-  const rig = RIGS[name]!;
+  const rig = RIGS[name];
   const height = width / SPRITES[name].aspect;
+  if (!rig) {
+    return (
+      <Image
+        source={SPRITES[name].source}
+        fadeDuration={0}
+        style={{ position: 'absolute', left: x - width / 2, top: y - height / 2, width, height, opacity, transform: [{ rotate: `${rotate + (angles[0] ?? 0) * 0.3}deg` }, { scaleX }, { scaleY }] }}
+      />
+    );
+  }
   return (
     <View
       style={{

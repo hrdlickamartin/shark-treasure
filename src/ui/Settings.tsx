@@ -31,6 +31,10 @@ export function Settings({ settings, onChange, onReset, onClose }: Props) {
         <Toggle label="Zvukové efekty" value={settings.sfx} onToggle={() => onChange({ sfx: !settings.sfx })} />
         <Toggle label="Vibrace" value={settings.haptics} onToggle={() => onChange({ haptics: !settings.haptics })} />
         <Toggle label="Ukazatele úkolů" value={settings.markers} onToggle={() => onChange({ markers: !settings.markers })} />
+        <Toggle label="Méně pohybu (bez otřesů)" value={settings.reduceMotion} onToggle={() => onChange({ reduceMotion: !settings.reduceMotion })} />
+        <Toggle label="Pomalejší příliv" value={settings.slowTide} onToggle={() => onChange({ slowTide: !settings.slowTide })} />
+        <Toggle label="Tvary rarity truhel" value={settings.rarityShapes} onToggle={() => onChange({ rarityShapes: !settings.rarityShapes })} />
+        <Toggle label="Větší text dialogů" value={settings.bigText} onToggle={() => onChange({ bigText: !settings.bigText })} />
         {confirm ? (
           <View style={styles.confirm}>
             <Text style={styles.warn}>Opravdu smazat veškerý postup?</Text>
@@ -57,9 +61,9 @@ export function Settings({ settings, onChange, onReset, onClose }: Props) {
 }
 
 const styles = StyleSheet.create({
-  panel: { width: '100%', maxWidth: 380, gap: 12, alignItems: 'stretch' },
+  panel: { width: '100%', maxWidth: 400, gap: 9, alignItems: 'stretch' },
   row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  label: { color: COLORS.white, fontFamily: FONTS.bodyHeavy, fontSize: 16 },
+  label: { color: COLORS.white, fontFamily: FONTS.bodyHeavy, fontSize: 15, flexShrink: 1 },
   toggle: { minWidth: 80 },
   confirm: { gap: 8, alignItems: 'center' },
   warn: { color: COLORS.coral, fontFamily: FONTS.bodyHeavy, fontSize: 14 },

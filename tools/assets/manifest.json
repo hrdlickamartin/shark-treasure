@@ -941,6 +941,239 @@
     "research_module": {
       "prompt": "a compact yellow underwater research data module box with a blinking blue light, a handle and a research logo sticker",
       "maxSize": 150
+    },
+    "portrait_jun": {
+      "prompt": "head and shoulders character portrait bust for a dialogue box, facing slightly right, friendly readable expression, Jun Arai, Japanese current cartographer and drone pilot in his thirties, short black hair, round glasses, teal windbreaker with many map pockets, calm analytical half smile, a rolled chart of ocean currents under his arm",
+      "maxSize": 256
+    },
+    "portrait_harlan": {
+      "prompt": "head and shoulders character portrait bust for a dialogue box, facing slightly right, friendly readable expression, Harlan \"Old Salt\" Pike, weathered old free diver in his seventies, short white beard, sun-tanned wrinkled face, ochre knit cap, faded navy diving jacket with a round brotherhood patch, warm but cunning smile",
+      "maxSize": 256
+    },
+    "pip": {
+      "prompt": "a small cute round underwater scout drone, side view facing RIGHT, glossy white and teal rounded shell, one big glowing cyan camera eye on the right side, two small ducted propellers, a tiny antenna with an orange tip, a little gripper claw underneath, friendly and curious",
+      "maxSize": 180
+    },
+    "tidewarden": {
+      "prompt": "the Tidewarden, an ancient gentle giant sea creature that is part humpback whale and part sea turtle, strict side view facing RIGHT, a whole colorful coral reef with corals, sponges and kelp growing on its huge domed shell, calm wise glowing eyes, long flippers, soft glowing golden breathing vents on the shell, body fully visible, not cut off",
+      "maxSize": 640,
+      "facing": "right",
+      "facingCheck": true
+    },
+    "tidewarden_young": {
+      "prompt": "a young Tidewarden calf, small gentle sea creature that is part baby whale and part sea turtle, side view facing RIGHT, small domed shell with tiny pink corals, big curious eyes, cute but not childish",
+      "maxSize": 320,
+      "facing": "right"
+    },
+    "reef_vent": {
+      "prompt": "a breathing vent on a giant living creature shell: a rounded pearly-beige rim opening with a soft golden glow inside, small pink corals around it, side view, sitting on the ground",
+      "maxSize": 200
+    },
+    "maelstrom_eel": {
+      "prompt": "the Maelstrom Eel, a gigantic storm sea eel boss, strict side view facing RIGHT, very long body stretched HORIZONTALLY in one gentle shallow wave (not coiled), stormy dark blue scales with white foam-like stripes, a glowing cyan gill arc behind the head, open jaws with stylized teeth, fierce glowing eyes, long tapering tail on the far left",
+      "maxSize": 520,
+      "facing": "right",
+      "facingCheck": true,
+      "rig": {
+        "cuts": [
+          0.66,
+          0.48,
+          0.3,
+          0.14
+        ],
+        "pivots": [
+          0.5,
+          0.5,
+          0.5,
+          0.5
+        ]
+      }
+    },
+    "hollow_shell": {
+      "prompt": "the Hollow Shell boss, a gigantic hermit crab that uses the broken front half of a wooden pirate galleon as its shell, side view facing RIGHT, huge orange-red armored claws and legs coming out of the ship hull on the right side, cannon ports with glowing eyes peeking out, barnacles and seaweed on the wood",
+      "maxSize": 520,
+      "facing": "right"
+    },
+    "rift_guardian": {
+      "prompt": "a translucent glowing Atlantean guardian spirit, tall elegant humanoid figure made of cyan and gold light with an ancient ornate mask and flowing robes, floating, front view, ethereal but readable silhouette",
+      "maxSize": 360
+    },
+    "barracuda": {
+      "prompt": "a sleek silver barracuda fish, strict side view facing RIGHT, long thin torpedo body with dark bars, sharp underbite jaw with small teeth, narrow tail",
+      "maxSize": 260,
+      "facing": "right"
+    },
+    "siphon": {
+      "prompt": "one segment of a chain siphonophore jellyfish colony: a translucent bell with pink-violet glowing frills and short stinging tentacles hanging down, front view",
+      "maxSize": 180
+    },
+    "mimic_octopus": {
+      "prompt": "a mimic octopus caught mid-disguise: a brown-gold octopus whose skin pattern imitates a wooden treasure chest with metal corners, big sneaky eyes, tentacles curling out, front view",
+      "maxSize": 240
+    },
+    "pistol_shrimp": {
+      "prompt": "a pistol shrimp, side view facing RIGHT, bright orange and white striped body, one oversized snapping claw at the front on the right, long antennae, cartoon but slightly dangerous",
+      "maxSize": 200,
+      "facing": "right"
+    },
+    "rift_shadow": {
+      "prompt": "a rift shadow shark, a translucent ghostly shark made of dark violet smoke and faint cyan light lines, strict side view facing RIGHT, glowing white eyes, wispy tail",
+      "maxSize": 420,
+      "facing": "right",
+      "rig": {
+        "cuts": [
+          0.45,
+          0.2
+        ],
+        "pivots": [
+          0.5,
+          0.5
+        ]
+      }
+    },
+    "tidal_gate": {
+      "prompt": "an ancient Atlantean underwater sluice gate seen from the side: two tall carved stone pillars with gold ornaments holding a vertical bronze gate panel with glowing cyan wave symbols, standing on the ground, tall and narrow",
+      "maxSize": 420
+    },
+    "tide_buoy": {
+      "prompt": "a small floating yellow navigation buoy with a navy stripe, a little blinking cyan light on top and a short chain hanging below",
+      "maxSize": 180
+    },
+    "chest_heavy": {
+      "prompt": "a huge heavy treasure chest reinforced with thick iron bands, rivets and two heavy chains wrapped around it, a big golden lock, gold coins peeking out, very solid and weighty, slightly wider than tall",
+      "maxSize": 320
+    },
+    "crane_hook": {
+      "prompt": "a big yellow crane hook with a pulley block hanging on a thick steel cable, side view",
+      "maxSize": 180
+    },
+    "bottle_map": {
+      "prompt": "a message in a bottle: a green glass bottle with a cork, a rolled old treasure map with a red X visible inside, small barnacles on the glass",
+      "maxSize": 160
+    },
+    "sand_mound": {
+      "prompt": "a small sandy mound on the sea floor with a faint carved X mark and a few shells, a corner of something golden peeking out",
+      "maxSize": 200
+    },
+    "rift_portal": {
+      "prompt": "a Heart rift: a swirling circular portal of distorted water with cyan and gold light spirals, floating particles and ancient Atlantean ring fragments orbiting it, front view",
+      "maxSize": 320
+    },
+    "atlantean_shard": {
+      "prompt": "an Atlantean shard: a glowing cyan crystal shard set in an ornate broken golden frame with tiny engraved runes",
+      "maxSize": 180
+    },
+    "heartstone": {
+      "prompt": "the Heartstone: a large glowing teal and gold crystal heart-shaped stone pulsing with light, set in pearly organic coral roots",
+      "maxSize": 260
+    },
+    "mat_scrap": {
+      "prompt": "a game UI icon of a small pile of rusty metal scrap pieces, bolts and a bent plate, chunky",
+      "maxSize": 128
+    },
+    "mat_rope": {
+      "prompt": "a game UI icon of a coiled ship rope with a piece of folded orange sailcloth, chunky",
+      "maxSize": 128
+    },
+    "mat_nacre": {
+      "prompt": "a game UI icon of an open seashell with shiny iridescent mother-of-pearl inside, chunky",
+      "maxSize": 128
+    },
+    "mat_ice": {
+      "prompt": "a game UI icon of a cluster of pale blue ice crystals, chunky",
+      "maxSize": 128
+    },
+    "mat_obsidian": {
+      "prompt": "a game UI icon of a shiny black obsidian stone with glowing orange cracks, chunky",
+      "maxSize": 128
+    },
+    "mat_biogel": {
+      "prompt": "a game UI icon of a small glass vial filled with glowing cyan-green bioluminescent gel, chunky",
+      "maxSize": 128
+    },
+    "mat_alloy": {
+      "prompt": "a game UI icon of a small ingot of golden Atlantean alloy with engraved cyan glowing runes, chunky",
+      "maxSize": 128
+    },
+    "mod_crane": {
+      "prompt": "a small yellow ship deck crane with a winch drum and a hook hanging down, side view, isolated boat equipment part",
+      "maxSize": 220
+    },
+    "mod_bell": {
+      "prompt": "a brass diving bell with round portholes hanging on a short chain, side view, isolated boat equipment part",
+      "maxSize": 200
+    },
+    "mod_aquarium": {
+      "prompt": "a small rounded ship aquarium tank with a navy frame and colorful fish and coral inside, side view, isolated boat equipment part",
+      "maxSize": 220
+    },
+    "mod_lab": {
+      "prompt": "a small white research lab container module with a round window, a satellite dish and a blinking antenna, side view, isolated boat equipment part",
+      "maxSize": 220
+    },
+    "mod_sail": {
+      "prompt": "a triangular orange storm sail on a short mast with ropes, side view, isolated boat equipment part",
+      "maxSize": 240
+    },
+    "mod_radio": {
+      "prompt": "a tall thin radio antenna tower with a red blinking light on top and small dish, side view, isolated boat equipment part",
+      "maxSize": 240
+    },
+    "mod_chamber": {
+      "prompt": "a small white decompression chamber cylinder with a round porthole door and pressure gauges, side view, isolated boat equipment part",
+      "maxSize": 220
+    },
+    "mod_trophy": {
+      "prompt": "a small glass display cabinet with golden trophies and ancient relics inside, navy wooden frame, side view, isolated boat equipment part",
+      "maxSize": 220
+    },
+    "icon_tide": {
+      "prompt": "a game UI icon of a curling ocean wave with a circular arrow showing the tide cycle, chunky",
+      "maxSize": 192
+    },
+    "icon_pip": {
+      "prompt": "a game UI icon of a cute round white and teal scout drone with one glowing cyan eye, chunky",
+      "maxSize": 192
+    },
+    "icon_workshop": {
+      "prompt": "a game UI icon of a crossed wrench and hammer over a gear, chunky",
+      "maxSize": 192
+    },
+    "icon_port": {
+      "prompt": "a game UI icon of a small harbor pier with a lighthouse and an anchor, chunky",
+      "maxSize": 192
+    },
+    "icon_guild": {
+      "prompt": "a game UI emblem icon of the Harbor Guild: a golden anchor over a ship wheel on a navy round shield, chunky",
+      "maxSize": 192
+    },
+    "icon_institute": {
+      "prompt": "a game UI emblem icon of the Ocean Institute: an open book with a seashell and a magnifier on a teal round shield, chunky",
+      "maxSize": 192
+    },
+    "icon_brotherhood": {
+      "prompt": "a game UI emblem icon of the Free Divers Brotherhood: a diving mask over crossed harpoons on an orange round shield, chunky",
+      "maxSize": 192
+    },
+    "icon_tidewatch": {
+      "prompt": "a game UI emblem icon of Tidewatch: a stylized eye inside a wave on a violet hexagon shield, chunky",
+      "maxSize": 192
+    },
+    "icon_flare": {
+      "prompt": "a game UI icon of a lit red signal flare stick with bright sparks, chunky",
+      "maxSize": 192
+    },
+    "icon_bait": {
+      "prompt": "a game UI icon of a fish bait bag with a fish tail sticking out, chunky",
+      "maxSize": 192
+    },
+    "icon_canister": {
+      "prompt": "a game UI icon of a small compact cyan oxygen canister with a valve, chunky",
+      "maxSize": 192
+    },
+    "icon_anchor": {
+      "prompt": "a game UI icon of a small current anchor: a metal anchor with a coiled cable and a cyan clamp, chunky",
+      "maxSize": 192
     }
   },
   "backgrounds": {
@@ -954,7 +1187,10 @@
     "bg_mediterranean": "Mediterranean Secrets underwater: clear azure water with warm sandy light, distant sunken ancient Greek and Roman temple ruins, broken columns, amphorae fields and statues, soft god rays",
     "bg_pacific": "Pacific Wilds underwater: vivid tropical blue water, towering giant kelp forest columns and huge coral reef walls in the distance, a distant whale silhouette, sun rays",
     "bg_graveyard": "Ship Graveyard underwater: murky grey-teal water, many silhouettes of sunken ships from different eras stacked in a labyrinth, rusty hulls, masts and cargo containers, eerie dim light",
-    "bg_volcanic": "Volcanic Depths underwater: very dark water with black basalt rock formations, glowing orange magma cracks and lava vents in the distance, rising hot bubbles, red-orange glow"
+    "bg_volcanic": "Volcanic Depths underwater: very dark water with black basalt rock formations, glowing orange magma cracks and lava vents in the distance, rising hot bubbles, red-orange glow",
+    "bg_riptide": "Riptide Straits underwater: a strong ocean river channel between dark volcanic rock walls, long white streaks of rushing current and bubbles flowing horizontally, steel blue and turquoise water, distant ancient stone sluice gates",
+    "bg_reef_back": "The Wandering Reef: the inside of a living reef growing on a giant creature shell, pearly beige shell plates with soft golden glowing vents, lush pink and green corals, distant huge flipper silhouette, warm light rays",
+    "bg_rift": "Heart rift deep water: dark indigo water with swirling cyan and gold light spirals, floating broken Atlantean ring fragments and distant glowing ruins, mysterious but not scary"
   },
   "illustrations": {
     "world_map": "illustrated stylized world map of fantasy oceans (Caribbean, Arctic, Mediterranean, Pacific, Atlantis, Abyss, Ship Graveyard, Volcanic), no text"

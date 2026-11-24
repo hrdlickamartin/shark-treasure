@@ -17,7 +17,7 @@ export function updateCamera(state: GameState, view: View, dt: number, snap = fa
   const k = snap ? 1 : Math.min(1, dt * 4.5);
   state.camera.x += (target.x - state.camera.x) * k;
   state.camera.y += (target.y - state.camera.y) * k;
-  state.camera.shake = Math.max(0, state.camera.shake - dt * 30);
+  state.camera.shake = state.reduceMotion ? 0 : Math.max(0, state.camera.shake - dt * 30);
   state.camera.offsetX = state.camera.shake > 0 ? (Math.random() - 0.5) * state.camera.shake : 0;
   state.camera.offsetY = state.camera.shake > 0 ? (Math.random() - 0.5) * state.camera.shake : 0;
 }

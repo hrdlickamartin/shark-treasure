@@ -7,9 +7,13 @@ import { bubble, sfx } from './effects';
 import { BOOST_SPEED } from './extras';
 import { clampToShaft } from '../endless';
 import { oceanEnd, oceanOf } from '../oceans';
+import { currentForce, gateBlock } from './tide';
+
+const HEARTSTONE_WEIGHT = 5;
 
 export function carriedWeight(state: GameState): number {
-  return state.diver.carried.reduce((sum, c) => sum + c.weight, 0);
+  const stone = state.diver.cargo.some((id) => state.props.some((p) => p.id === id && p.kind === 'heartstone')) ? HEARTSTONE_WEIGHT : 0;
+  return state.diver.carried.reduce((sum, c) => sum + c.weight, 0) + stone;
 }
 
 export function updateBoat(state: GameState, input: Input, dt: number) {
@@ -40,7 +44,8 @@ export function updateBoat(state: GameState, input: Input, dt: number) {
     }
   } else boat.reverse = 0;
   const reversing = backwards && boat.turnFx <= 0;
-  const target = input.x * stats.boatSpeed * (reversing ? 0.35 : boat.turnFx > 0 ? 0.2 : 1);
+  const sail = stats.stormSail && state.condition === 'storm' ? 1.3 : 1;
+  const target = input.x * stats.boatSpeed * sail * (reversing ? 0.35 : boat.turnFx > 0 ? 0.2 : 1);
   boat.vx += (target - boat.vx) * Math.min(1, dt * 2.5);
   let next = boat.x + boat.vx * dt;
   const limit = state.mode === 'endless' ? 160 : oceanEnd(oceanOf(state)) - 140;
@@ -64,6 +69,7 @@ export function updateDiverMovement(state: GameState, input: Input, dt: number) 
   if (diver.stun > 0) max *= 0.5;
   const boost = state.boostTime > 0 ? BOOST_SPEED : 1;
   max *= boost;
+  if (diver.turnBoost > 0) max *= 1.3;
 
   const mag = Math.hypot(input.x, input.y);
   const ix = mag > 1 ? input.x / mag : input.x;
@@ -83,16 +89,30 @@ export function updateDiverMovement(state: GameState, input: Input, dt: number) 
   let fy = 0;
   for (const current of state.currents) {
     if (diver.x > current.x0 && diver.x < current.x1 && diver.y > current.y0 && diver.y < current.y1) {
-      fx += current.force;
+      fx += currentForce(state, current.force, current.tidal);
       fy += current.lift;
     }
   }
 
   if (state.condition === 'storm') fx += Math.sin(state.time * 0.6) * 45 + Math.sin(state.time * 1.7) * 15;
+  if (fx !== 0 && stats.racer) {
+    diver.vx = clamp(diver.vx * 1.12, -max * 1.12, max * 1.12);
+  }
+  if (diver.anchor > 0) {
+    fx = 0;
+    fy = 0;
+    if (Math.random() < dt * 8) bubble(state, diver.x, diver.y + 18, 3);
+  }
 
   const prevY = diver.y;
+  const prevX = diver.x;
   diver.x += (diver.vx + fx) * dt;
   diver.y += (diver.vy + fy) * dt;
+  const gated = gateBlock(state, prevX, diver.x, diver.y, DIVER_RADIUS + 6);
+  if (gated !== diver.x) {
+    diver.x = gated;
+    diver.vx = 0;
+  }
 
   if (diver.y < DIVER_MIN_Y) {
     diver.y = DIVER_MIN_Y;
@@ -129,7 +149,11 @@ export function updateDiverMovement(state: GameState, input: Input, dt: number) 
     }
   }
 
-  if (Math.abs(diver.vx) > 12 && Math.abs(input.x) > 0.15) diver.facing = diver.vx > 0 ? 1 : -1;
+  if (Math.abs(diver.vx) > 12 && Math.abs(input.x) > 0.15) {
+    const facing = diver.vx > 0 ? 1 : -1;
+    if (facing !== diver.facing && stats.quickStart) diver.turnBoost = 2;
+    diver.facing = facing;
+  }
 
   const speed = Math.hypot(diver.vx, diver.vy);
   state.swimTimer -= dt;

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Image, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { OCEAN_ORDER, OCEANS, type OceanId } from '../game/oceans';
+import { DEFAULT_TIDE, EXPANSION_OCEANS, mapPosition, OCEAN_ORDER, OCEANS, WORLD_OCEANS, type OceanId } from '../game/oceans';
+import { expansionOn } from '../progression/tides';
 import { CHARACTERS } from '../progression/characters';
 import { activeQuests, CATEGORY_LABEL, CHAPTER_COUNT } from '../progression/quests';
 import type { SaveData } from '../progression/saveData';
@@ -41,6 +42,11 @@ export function WorldMap({ save, width, height, onTravel, onClose }: Props) {
   const ocean = OCEANS[selected];
   const open = save.oceans.includes(selected);
   const chapterIndex = OCEAN_ORDER.indexOf(selected);
+  const expansion = expansionOn(save);
+  const shown = WORLD_OCEANS.filter((id) => !EXPANSION_OCEANS.includes(id) || expansion);
+  const rifts = save.rifts.active.filter((r) => r.ocean === selected);
+  const tide = ocean.tide ?? DEFAULT_TIDE;
+  const lockText = EXPANSION_OCEANS.includes(selected) ? `Odemkne se v kapitole ${selected === 'riptide' ? 9 : 10} rozšíření Živé proudy.` : `Odemkne se po kapitole ${chapterIndex} hlavního příběhu.`;
   const quests = activeQuests(save.quests, save.oceans, save.flags).filter((q) => q.ocean === selected);
   const explored = ocean.regions.filter((r) => save.discoveries.includes(`loc:${selected}:${r.id}`)).length;
   const levels = save.upgrades;
@@ -50,15 +56,18 @@ export function WorldMap({ save, width, height, onTravel, onClose }: Props) {
       <View style={[styles.root, { flexDirection: landscape ? 'row' : 'column' }]}>
         <View style={[styles.map, { width: mapW, height: mapH }]}>
           <Image source={ILLUSTRATIONS.world_map} style={{ width: mapW, height: mapH }} fadeDuration={0} />
-          {OCEAN_ORDER.map((id) => {
+          {shown.map((id) => {
             const def = OCEANS[id];
+            const pos = mapPosition(def);
+            const riftHere = save.rifts.active.some((r) => r.ocean === id);
             const unlocked = save.oceans.includes(id);
             const active = id === selected;
             return (
-              <TouchAction key={id} onFire={() => setSelected(id)} style={[styles.pin, { left: def.map.x * mapW - 22, top: def.map.y * mapH - 22 }]}>
-                <View style={[styles.pinDot, { backgroundColor: unlocked ? (active ? COLORS.gold : COLORS.aqua) : 'rgba(4, 27, 61, 0.75)', borderColor: active ? COLORS.white : COLORS.navy }]}>
-                  <Text style={styles.pinText}>{unlocked ? OCEAN_ORDER.indexOf(id) + 1 : '?'}</Text>
+              <TouchAction key={id} onFire={() => setSelected(id)} style={[styles.pin, { left: pos.x * mapW - 22, top: pos.y * mapH - 22 }]}>
+                <View style={[styles.pinDot, def.expansion && styles.pinExpansion, { backgroundColor: unlocked ? (active ? COLORS.gold : def.expansion ? COLORS.purple : COLORS.aqua) : 'rgba(4, 27, 61, 0.75)', borderColor: active ? COLORS.white : COLORS.navy }]}>
+                  {def.expansion ? <Icon name={def.moving ? 'tidewarden_young' : 'icon_tide'} size={22} /> : <Text style={styles.pinText}>{unlocked ? OCEAN_ORDER.indexOf(id) + 1 : '?'}</Text>}
                 </View>
+                {riftHere && <View style={styles.rift} />}
                 {id === save.ocean && <View style={styles.here} />}
               </TouchAction>
             );
@@ -67,10 +76,23 @@ export function WorldMap({ save, width, height, onTravel, onClose }: Props) {
         <Panel style={[styles.panel, { maxHeight: landscape ? height - 24 : height - mapH - 40, width: landscape ? Math.min(360, width - mapW - 40) : mapW }]}>
           <ScrollView style={styles.scroll} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
             <Title size={22}>{open ? ocean.czech : 'Neznámé vody'}</Title>
-            <Text style={styles.sub}>{open ? `${ocean.name} • ${ocean.subtitle}` : `Odemkne se po kapitole ${chapterIndex} hlavního příběhu.`}</Text>
+            <Text style={styles.sub}>{open ? `${ocean.name} • ${ocean.subtitle}` : lockText}</Text>
             {open && (
               <>
                 <Text style={styles.mechanic}>{ocean.mechanic}</Text>
+                {expansion && (
+                  <Text style={styles.sub}>
+                    Příliv: cyklus {Math.round(tide.period * (save.settings.slowTide ? 1.5 : 1))} s{tide.strength >= 0.6 ? ' • proudy se otáčejí, brány se zavírají za odlivu' : ' • jen mírně mění sílu proudů'}
+                    {ocean.moving ? ' • útes se tento týden posunul, každý ponor začíná jinde' : ''}
+                  </Text>
+                )}
+                {rifts.length > 0 && <Text style={[styles.label, { color: COLORS.purple }]}>Trhliny Srdce: {rifts.length}</Text>}
+                {rifts.map((r) => (
+                  <Text key={r.id} style={styles.sub}>
+                    {Math.round(Math.abs(r.x) / 10)} m {r.x < 0 ? 'vlevo' : 'vpravo'} od přístavu • zbývá {r.left} ponory
+                  </Text>
+                ))}
+                {save.hunt.active?.ocean === selected && <Text style={[styles.label, { color: COLORS.gold }]}>Mapa pokladu vede sem</Text>}
                 <Text style={styles.label}>Doporučená výbava</Text>
                 <View style={styles.gearRow}>
                   <Gear label="Tlakový oblek" have={levels.pressure} need={ocean.recommended.pressure} />
@@ -118,6 +140,8 @@ const styles = StyleSheet.create({
   pin: { position: 'absolute', width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   pinDot: { width: 34, height: 34, borderRadius: 17, borderWidth: 3, alignItems: 'center', justifyContent: 'center' },
   pinText: { color: COLORS.white, fontFamily: FONTS.title, fontSize: 15, lineHeight: 19, ...textShadow },
+  pinExpansion: { borderStyle: 'dashed' },
+  rift: { position: 'absolute', top: 0, right: 2, width: 12, height: 12, borderRadius: 6, backgroundColor: COLORS.purple, borderWidth: 2, borderColor: COLORS.white },
   here: { position: 'absolute', bottom: -2, width: 10, height: 10, borderRadius: 5, backgroundColor: COLORS.coral, borderWidth: 2, borderColor: COLORS.white },
   panel: { gap: 8 },
   scroll: { flexGrow: 0, flexShrink: 1 },

@@ -7,6 +7,7 @@ import { propFromSpec } from './props';
 const EVENT_DISTANCE = 1600;
 const EVENT_CHANCE = 0.2;
 const KINDS: BoatEventKind[] = ['cargo', 'merchant', 'signal', 'sos', 'whales', 'storm'];
+const EXPANSION_KINDS: BoatEventKind[] = [...KINDS, 'bottle', 'bottle'];
 
 const TOASTS: Record<BoatEventKind, string> = {
   cargo: 'Na hladině plave ztracený náklad – propluj kolem něj.',
@@ -15,6 +16,7 @@ const TOASTS: Record<BoatEventKind, string> = {
   sos: 'SOS! Kousek od lodi se topí potápěč. Zachraň ho.',
   whales: 'Migrující velryby! Skvělá příležitost k fotografii.',
   storm: 'Blíží se bouře – proudy zesílí, ale poklady mají větší cenu.',
+  bottle: 'Na hladině se houpe láhev se vzkazem – propluj kolem ní.',
 };
 
 export function startBoatEvent(state: GameState, kind: BoatEventKind) {
@@ -33,6 +35,8 @@ export function startBoatEvent(state: GameState, kind: BoatEventKind) {
     state.chests.push({ id: `evt:signal:${state.time}`, kind: 'mystery', x: ahead, y: restY, restY, value: 300 + tier * 150, regionId: 0, falling: false, vy: 0, phase: 0, pickupDelay: 0, boss: false, inCave: false, relic: null, rolled: false });
   } else if (kind === 'sos') {
     state.props.push(propFromSpec(state, { id: `evt:sos:${state.time}`, kind: 'survivor', x: ahead, lift: 60, quest: null, sprite: null, active: false, value: 400 + tier * 150 }));
+  } else if (kind === 'bottle') {
+    state.props.push(propFromSpec(state, { id: `evt:bottle:${state.time}`, kind: 'bottle', x: ahead, lift: 0, quest: null, sprite: null, active: true, value: 0 }));
   } else if (kind === 'whales') {
     state.fish.push({ id: `evt:whale:${state.time}`, sprite: 'whale', x: ahead, y: 140, vx: boat.facing * 30, minX: ahead - 1200, maxX: ahead + 1200, count: 2, phase: 0, size: 220 });
   } else {
@@ -43,8 +47,10 @@ export function startBoatEvent(state: GameState, kind: BoatEventKind) {
 export function updateBoatEvents(state: GameState, dt: number) {
   if (state.mode !== 'sea' || state.phase !== 'boat' || state.challenge || state.boatEvent) return;
   state.sailed += Math.abs(state.boat.vx) * dt;
-  if (state.sailed < EVENT_DISTANCE || Math.random() > EVENT_CHANCE * dt) return;
-  const kind = KINDS[Math.floor(Math.random() * KINDS.length)];
+  const chance = EVENT_CHANCE * (state.stats.stormSail ? 1.5 : 1);
+  if (state.sailed < EVENT_DISTANCE || Math.random() > chance * dt) return;
+  const pool = state.expansion ? EXPANSION_KINDS : KINDS;
+  const kind = pool[Math.floor(Math.random() * pool.length)];
   if (kind === 'storm' && state.condition !== 'normal') return;
   startBoatEvent(state, kind);
 }

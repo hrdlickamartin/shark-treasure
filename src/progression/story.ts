@@ -1,6 +1,6 @@
 import type { Line } from './characters';
 import { QUESTS } from './quests';
-import type { Ending, SaveData } from './saveData';
+import type { Ending, SaveData, TideEnding } from './saveData';
 
 export interface EndingDef {
   id: Ending;
@@ -59,6 +59,53 @@ export const ENDINGS: Record<Ending, EndingDef> = {
 };
 
 export const ENDING_ORDER: Ending[] = ['guardian', 'hidden', 'power', 'sacrifice'];
+
+export interface TideEndingDef {
+  id: TideEnding;
+  title: string;
+  choice: string;
+  text: string;
+  epilogue: Line[];
+  reward: { money: number; pearls: number; research: number };
+}
+
+export const TIDE_ENDINGS: Record<TideEnding, TideEndingDef> = {
+  escort: {
+    id: 'escort',
+    title: 'Doprovod',
+    choice: 'Doprovodit Strážce chráněnou trasou',
+    text: 'Strážce putuje dál chráněnou trasou a cestou obnovuje mrtvé útesy. Přístavy se poprvé domluvily na společných pravidlech. Proudy dýchají – a nikdo jim neporoučí.',
+    epilogue: [
+      { who: 'jun', text: 'Nová trasa je v mapě. Každý týden jinde. Konečně mapa, která žije.' },
+      { who: 'maya', text: 'Elias by tohle chtěl vidět. Tak to uvidíme za něj.' },
+    ],
+    reward: { money: 25000, pearls: 15, research: 300 },
+  },
+  sleep: {
+    id: 'sleep',
+    title: 'Spánek',
+    choice: 'Uspat Strážce pod Srdcem',
+    text: 'Strážce znovu usíná pod Srdcem oceánu. Proudy se uklidnily a trhliny zmizely – a s nimi i část života, kterou s sebou nesl. Moře je bezpečnější a o něco tišší.',
+    epilogue: [
+      { who: 'harlan', text: 'Tak jsme ho nechali spát. Jako tehdy. Jen tentokrát víme proč.' },
+      { who: 'maya', text: 'Klidné moře taky potřebuje průzkumníky. Kam teď, kapitáne?' },
+    ],
+    reward: { money: 10000, pearls: 10, research: 200 },
+  },
+  harvest: {
+    id: 'harvest',
+    title: 'Sklizeň',
+    choice: 'Vzít si energii Srdečního kamene',
+    text: 'Energie Srdečního kamene proudí do sítě a do tvé výbavy. Strážce slábne a mizí do hlubin. Oceány jsou bohatší – a neklidnější. Anomálie už se nezavřou.',
+    epilogue: [
+      { who: 'diego', text: 'S pojistkami to vydrží. Musí.' },
+      { who: 'maya', text: 'Doufám, že víme, co jsme si vzali. A komu.' },
+    ],
+    reward: { money: 50000, pearls: 5, research: 100 },
+  },
+};
+
+export const TIDE_ENDING_ORDER: TideEnding[] = ['escort', 'sleep', 'harvest'];
 
 export const ENDING_PROMPT: Line[] = [
   { who: 'voss', text: 'Osm fragmentů. Konečně. Dejte mi Srdce a oceány už nikdy nebudou nevyužité.' },

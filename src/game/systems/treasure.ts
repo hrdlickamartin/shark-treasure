@@ -1,4 +1,7 @@
-import { CHESTS, SHARKS } from '../catalog';
+import { CHESTS, chestSlots, SHARKS } from '../catalog';
+import { CHUNK_W } from '../constants';
+import { startCollapse } from './collapse';
+import { carriedSlots, updateCrane } from './haul';
 import { floorAt } from '../terrain';
 import { RELIC_CHANCE, RELICS } from '../../progression/relics';
 import { oceanOf } from '../oceans';
@@ -29,9 +32,9 @@ export function updateTreasure(state: GameState, dt: number) {
     if (dist < 360 && !state.seenChests.includes(chest.id)) state.seenChests.push(chest.id);
     if (dist >= 40) continue;
     if (state.hazards.some((h) => h.kind === 'crab' && h.alive && h.link === chest.id)) continue;
-    if (diver.carried.length >= stats.capacity) {
+    if (carriedSlots(state) + chestSlots(chest.kind) > stats.capacity) {
       if (state.time - state.record.fullWarned > 2.5) {
-        floatText(state, 'Plná síť! Vrať se na loď', diver.x, diver.y - 50, '#FFFFFF');
+        floatText(state, chest.kind === 'heavy' ? 'Těžká truhla zabere 2 místa v síti' : 'Plná síť! Vrať se na loď', diver.x, diver.y - 50, '#FFFFFF');
         state.record.fullWarned = state.time;
       }
       continue;
@@ -50,6 +53,14 @@ export function updateTreasure(state: GameState, dt: number) {
       state.events.push({ type: 'toast', text: alive ? `Máš poklad! ${SHARKS[boss].name} tě pronásleduje – uteč!` : 'Máš poklad poraženého bosse!' });
     }
     diver.collectFlash = 0.6;
+    if (chest.inCave) startCollapse(state, Math.floor(chest.x / CHUNK_W));
+    if (chest.kind === 'heavy') {
+      floatText(state, 'Těžká truhla! Pomalejší plavání', chest.x, chest.y - 70, '#FF9A3C');
+      if (!state.record.discoveries.includes('heavy')) {
+        state.record.discoveries.push('heavy');
+        state.events.push({ type: 'toast', text: 'Těžká truhla: doplav s ní, pošli ji 2 balóny, nebo ji vytáhni jeřábem u lodi.' });
+      }
+    }
     floatText(state, `+${chest.value} $`, chest.x, chest.y - 40);
     if (chest.kind === 'mystery') floatText(state, 'Mystery!', chest.x, chest.y - 70, '#20D4E8');
     burst(state, 'coin', chest.x, chest.y, 14, 160, 0.9, 9);
@@ -58,6 +69,8 @@ export function updateTreasure(state: GameState, dt: number) {
     sfx(state, 'collect');
     haptic(state, 'success');
   }
+
+  updateCrane(state);
 
   for (let i = state.coins.length - 1; i >= 0; i--) {
     const coin = state.coins[i];

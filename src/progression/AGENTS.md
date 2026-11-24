@@ -18,6 +18,8 @@ Všechno mezi ponory: co hráč vlastní, co splnil a kam smí. Logika jsou čis
 
 Hráči mají savy z dřívějších verzí, rozbitá migrace jim smaže postup.
 
+Save je ve verzi 5 (materiály, výbava, modifikace, moduly lodi, reputace, zakázky, trhliny, úlomky, lov pokladů, safari, týdenní expedice, kapitola a konec rozšíření). Rozšíření (materiály, výbava, moduly, reputace, Pip) přežije novou výpravu.
+
 ## Vyhodnocení ponoru
 
 `applyDive(save, result)` v `progress.ts` je jediné místo, kde `DiveResult` mění save:
@@ -29,6 +31,8 @@ Pak zavolá `settle`, který:
 - posune kapitolu (`chapterEnd`) a odemkne oceány;
 - nastaví příznaky;
 - zařadí dialogy do `pendingDialogs` (`debrief:`, `brief:`, `hook_`, `choice:`).
+
+Pro rozšíření volá `applyDive` navíc `applyTideDive` z `tides.ts` (materiály, spotřebovaná výbava, zakázky, safari, týdenní expedice, lov pokladů, trhliny podle konce kampaně). `settle` vyhodnocuje i cíle, které nevznikají v ponoru (`reputation`, `craft`, `rifts`), takže akce v přístavu ukládej přes `resettle`, jinak by se quest nedokončil.
 
 Vrací nový save a `ResultSummary` pro obrazovku výsledku. Volby v dialozích jdou přes `applyChoice`, který končí také v `settle`.
 
@@ -44,6 +48,9 @@ Vrací nový save a `ResultSummary` pro obrazovku výsledku. Volby v dialozích 
 | `research.ts` | výzkumný strom, úroveň průzkumníka podle XP a odměny za úroveň |
 | `expedition.ts`, `embark.ts` | nová výprava (prestiž): perly, perky, škálování obtížnosti a odměn, co se resetuje |
 | `relics.ts`, `skins.ts`, `encyclopedia.ts` | relikvie s bonusy, vzhledy potápěče, katalog druhů pro fotky |
+| `tideQuests.ts` | questy rozšíření (kapitoly 9–12, pole `chapter`, `unlocks`); kapitoly rozšíření posouvají `tideChapter`, ne `storyChapter` |
+| `crafting.ts`, `modules.ts`, `factions.ts` | recepty a modifikace, moduly lodi a sloty, frakce s úrovněmi, zakázky a odměny za úlomky |
+| `tides.ts` | čisté funkce rozšíření: trhliny, lov pokladů, safari, týdenní expedice, výroba, nákup modulů, předání úlomku; `hasFlag` počítá i odvozené příznaky (`allies3`, `riftsN`, `respect:<frakce>`) |
 
 Questy a dialogy jsou data. Nový quest je záznam v `QUESTS` (plus dialogy v `dialogue.ts`, když má `briefing`/`debrief`). Kód měň jen pro nový druh cíle v `QuestGoal`, a pak ve třech místech:
 - `progressQuest`: plnění cíle;

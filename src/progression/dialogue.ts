@@ -28,6 +28,29 @@ const SCRIPTS: Record<string, Line[]> = {
   hook_4: [{ who: 'maya', text: 'Diego možná žije. Prosím, poplujme do Propasti.' }],
   hook_5: [{ who: 'maya', text: 'Diego varuje: Voss má poslední fragment. A Eliasova loď je na Hřbitově lodí.' }],
   hook_6: [{ who: 'maya', text: 'Síť se destabilizuje. Finální expedice. Ať se stane cokoli – jsme tým.' }],
+  tide_intro_guardian: [
+    { who: 'diego', text: 'Komise Tidewatch dnes zasedla poprvé. Pojistky drží. A přesto… proudy u Karibiku se otáčejí.' },
+    { who: 'voss', text: 'Pod dohledem, jak vidíte. Ale moje data říkají, že síť nebyla stroj. Byla postavená kolem něčeho živého.' },
+    { who: 'maya', text: 'Kapitáne, vyplouváme. Někdo musí zjistit, co jsme to vlastně probudili.' },
+  ],
+  tide_intro_hidden: [
+    { who: 'idris', text: 'Mapy shořely. Jenže v přístavu se objevila kopie. Někdo ví, kde Srdce leží.' },
+    { who: 'rook', text: 'Bratrstvo se dělí. Půlka chce Srdce najít a prodat. Já jen chci vědět, proč se proudy točí dokola.' },
+    { who: 'maya', text: 'Srdce jsme ukryli. Ale oceán se mění dál. Tak se pojďme podívat proč.' },
+  ],
+  tide_intro_power: [
+    { who: 'voss', text: 'Síť pracuje naplno. Tidewatch řídí proudy po celém světě. Gratuluji, pomohl jste změnit dějiny.' },
+    { who: 'maya', text: 'A anomálie sílí. Tvorové jsou nervózní a ve starých oceánech se otevírají trhliny.' },
+    { who: 'maya', text: 'Tohle jsme spustili my. Tak to taky musíme dát do pořádku.' },
+  ],
+  tide_intro_sacrifice: [
+    { who: 'nora', text: 'Loď drží pohromadě jen silou vůle a Mayiných svárů. Technologie je pryč. Ale vy jste tady.' },
+    { who: 'maya', text: 'Začneme dílnou. Ze šrotu a lan se dá postavit víc, než si myslíš. A pak zjistíme, proč se proudy otáčejí.' },
+  ],
+  tide_hook_8: [{ who: 'jun', text: 'Úžina proudů je otevřená. Kotviště Tern, molo tří frakcí. Najdeme tam i Harlana – Eliasova starého parťáka.' }],
+  tide_hook_9: [{ who: 'maya', text: 'Stopa krunýře vede k útesu, který se hýbe. Jun mu říká Putující útes. Je na zádech Strážce proudů.' }],
+  tide_hook_10: [{ who: 'harlan', text: 'Klíč je tvůj. Srdeční jeskyně čeká. A s ní i všechny trhliny, které Srdce otevřelo.' }],
+  tide_hook_11: [{ who: 'maya', text: 'Strážce pluje dál. Ať jsme se rozhodli jakkoli, jeho cesta se teď mění každý týden.' }],
 };
 
 const RADIO: Record<string, Line[]> = {
@@ -62,6 +85,22 @@ const RADIO: Record<string, Line[]> = {
   cold: [{ who: 'maya', text: 'Teplota padá. Najdi topný maják nebo se vynoř.' }],
   heat: [{ who: 'maya', text: 'Přehříváš se! Chladicí krystaly nebo hladina, hned.' }],
   pressure: [{ who: 'maya', text: 'Tlak je nad limit obleku. Vystoupej, prosím!' }],
+  tide_low: [
+    { who: 'jun', text: 'Odliv za osm. Sedm. Drž se dna, tam to tolik netáhne.' },
+    { who: 'jun', text: 'Proud se za chvíli otočí. Brány se zavřou.' },
+  ],
+  tide_high: [
+    { who: 'jun', text: 'Příliv za osm sekund. Brány se otevřou, ale proud zesílí.' },
+    { who: 'maya', text: 'Slyšíš roh? Příliv se vrací. Chyť se něčeho!' },
+  ],
+  collapse: [
+    { who: 'maya', text: 'Strop praská! Ven, hned, truhla počká!' },
+    { who: 'maya', text: 'Sypou se kameny! Plav k nejbližšímu okraji jeskyně!' },
+  ],
+  pip: [
+    { who: 'maya', text: 'Pip říká, že tam vlevo je něco lesklého. Pip říká, že všechno lesklé je skvělý nápad.' },
+    { who: 'maya', text: 'Pip si myslí, že ta truhla dýchá. Pip má obvykle pravdu, když jde o věci, co dýchají.' },
+  ],
   success: [
     { who: 'maya', text: 'Podívej se na to! Tolik věcí a žádná díra v lodi. Dneska tomu říkám úspěch.' },
     { who: 'maya', text: 'Vítej zpátky. Kafe je teplé a nálezy v laboratoři.' },

@@ -1,10 +1,11 @@
+import type { KitCounts, MaterialCounts } from './gear';
 import type { OceanId } from './oceans';
 import type { SpriteName } from '../render/spriteAssets';
 
-export type ChestKind = 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary' | 'mystery' | 'jeweled';
-export type SharkKind = 'small' | 'reef' | 'hammer' | 'great' | 'deep' | 'mega' | 'orca' | 'leviathan' | 'abyssal';
-export type HazardKind = 'jelly' | 'mine' | 'urchin' | 'octopus' | 'eel' | 'debris' | 'crab' | 'angler' | 'ray' | 'toxic' | 'spikes';
-export type DamageSource = 'shark' | 'oxygen' | 'mine' | 'jelly' | 'urchin' | 'eel' | 'debris' | 'crab' | 'mega' | 'angler' | 'ray' | 'toxic' | 'spikes' | 'pressure' | 'cold' | 'heat' | 'guardian';
+export type ChestKind = 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary' | 'mystery' | 'jeweled' | 'heavy';
+export type SharkKind = 'small' | 'reef' | 'hammer' | 'great' | 'deep' | 'mega' | 'orca' | 'leviathan' | 'abyssal' | 'maelstrom' | 'hollow';
+export type HazardKind = 'jelly' | 'mine' | 'urchin' | 'octopus' | 'eel' | 'debris' | 'crab' | 'angler' | 'ray' | 'toxic' | 'spikes' | 'mimic' | 'barracuda' | 'siphon' | 'pistol' | 'shadow';
+export type DamageSource = 'shark' | 'oxygen' | 'mine' | 'jelly' | 'urchin' | 'eel' | 'debris' | 'crab' | 'mega' | 'angler' | 'ray' | 'toxic' | 'spikes' | 'pressure' | 'cold' | 'heat' | 'guardian' | 'collapse' | 'barracuda' | 'siphon' | 'pistol' | 'shadow';
 export type Condition = 'normal' | 'night' | 'storm' | 'gold';
 export type ChallengeId = 'thin_air' | 'blind' | 'frenzy' | 'single' | 'night_owl';
 export type RelicId = 'compass' | 'pearl' | 'trident' | 'mask' | 'coin' | 'horn' | 'idol' | 'map';
@@ -27,7 +28,11 @@ export type SfxName =
   | 'mine'
   | 'zap'
   | 'drop'
-  | 'waves';
+  | 'waves'
+  | 'horn'
+  | 'pip'
+  | 'crumble'
+  | 'gate';
 
 export interface Input {
   x: number;
@@ -66,6 +71,20 @@ export interface Stats {
   cutter: number;
   camera: number;
   drain: number;
+  drone: number;
+  droneRange: number;
+  crane: boolean;
+  bell: boolean;
+  net: boolean;
+  reserve: boolean;
+  deflect: boolean;
+  quickStart: boolean;
+  racer: boolean;
+  riftArmor: boolean;
+  lens: boolean;
+  pipMagnet: boolean;
+  harpoonRange: number;
+  stormSail: boolean;
 }
 
 export interface Supplies {
@@ -103,6 +122,8 @@ export interface Cave {
   bottom: number[];
   top: number[];
   pocket: { x: number; y: number; r: number } | null;
+  unstable?: boolean;
+  collapsed?: boolean;
 }
 
 export interface Chest {
@@ -179,6 +200,7 @@ export interface Shark {
   maxHp: number;
   dying: number;
   hitFlash: number;
+  exposed: boolean;
 }
 
 export interface Hazard {
@@ -210,6 +232,7 @@ export interface Current {
   y1: number;
   force: number;
   lift: number;
+  tidal?: boolean;
 }
 
 export interface FishSchool {
@@ -225,7 +248,7 @@ export interface FishSchool {
   size: number;
 }
 
-export type ParticleKind = 'bubble' | 'spark' | 'coin' | 'streak' | 'boom' | 'splash' | 'cloud' | 'rain' | 'ink';
+export type ParticleKind = 'bubble' | 'spark' | 'coin' | 'streak' | 'boom' | 'splash' | 'cloud' | 'rain' | 'ink' | 'sand' | 'ring';
 
 export interface Particle {
   kind: ParticleKind;
@@ -293,6 +316,15 @@ export interface Diver {
   temp: number;
   breathing: boolean;
   inAir: boolean;
+  kit: KitCounts;
+  anchor: number;
+  immune: number;
+  tow: boolean;
+  reserveUsed: boolean;
+  deflectUsed: boolean;
+  canisterUsed: boolean;
+  bellUsed: boolean;
+  turnBoost: number;
 }
 
 export interface DiveRecord {
@@ -309,14 +341,43 @@ export interface DiveRecord {
   photos: Photo[];
   activated: string[];
   cut: number;
+  materials: MaterialCounts;
+  scans: string[];
+  kitUsed: KitCounts;
+  escapes: number;
+  gates: number;
+  heavy: number;
 }
 
 export interface Photo {
   species: string;
   stars: number;
+  behavior?: string;
 }
 
-export type PropKind = 'fragment' | 'survivor' | 'artifact' | 'lever' | 'node' | 'echo' | 'vault' | 'guardian' | 'sealed' | 'beacon' | 'cargo' | 'merchant';
+export type PropKind =
+  | 'fragment'
+  | 'survivor'
+  | 'artifact'
+  | 'lever'
+  | 'node'
+  | 'echo'
+  | 'vault'
+  | 'guardian'
+  | 'sealed'
+  | 'beacon'
+  | 'cargo'
+  | 'merchant'
+  | 'gate'
+  | 'material'
+  | 'rift'
+  | 'shard'
+  | 'vent'
+  | 'dig'
+  | 'chain'
+  | 'heartstone'
+  | 'bottle'
+  | 'scan';
 
 export interface PropSpec {
   id: string;
@@ -327,6 +388,7 @@ export interface PropSpec {
   sprite: SpriteName | null;
   active: boolean;
   value: number;
+  tag?: string;
 }
 
 export interface Prop extends PropSpec {
@@ -336,7 +398,7 @@ export interface Prop extends PropSpec {
   phase: number;
 }
 
-export type BoatEventKind = 'cargo' | 'merchant' | 'signal' | 'sos' | 'whales' | 'storm';
+export type BoatEventKind = 'cargo' | 'merchant' | 'signal' | 'sos' | 'whales' | 'storm' | 'bottle';
 
 export interface DiveResult {
   mode: GameMode;
@@ -378,6 +440,14 @@ export interface DiveResult {
   minX: number;
   maxX: number;
   discoveries: string[];
+  materials: MaterialCounts;
+  materialsLost: MaterialCounts;
+  kitUsed: KitCounts;
+  scans: string[];
+  escapes: number;
+  gates: number;
+  heavy: number;
+  variant: GameVariant;
 }
 
 export type GameEvent =
@@ -389,7 +459,8 @@ export type GameEvent =
   | { type: 'merchant' }
   | { type: 'radio'; topic: string }
   | { type: 'cargo'; value: number }
-  | { type: 'photo'; species: string; stars: number; prev: number };
+  | { type: 'photo'; species: string; stars: number; prev: number }
+  | { type: 'bottle' };
 
 export type GamePhase = 'boat' | 'dive' | 'result';
 
@@ -402,6 +473,59 @@ export interface Camera {
 }
 
 export type GameMode = 'sea' | 'endless';
+
+export type GameVariant = 'normal' | 'free' | 'weekly' | 'legendary';
+
+export type DroneMode = 'dock' | 'out' | 'scout' | 'return' | 'off';
+
+export interface Drone {
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  mode: DroneMode;
+  timer: number;
+  cooldown: number;
+  targetX: number;
+  targetY: number;
+  carry: { kind: 'coins' | 'material' | 'shard'; value: number; material?: string; id?: string } | null;
+  mood: string;
+  moodTime: number;
+  facing: 1 | -1;
+  phase: number;
+}
+
+export interface Collapse {
+  index: number;
+  time: number;
+  next: number;
+}
+
+export interface FallingRock {
+  id: number;
+  x: number;
+  y: number;
+  vy: number;
+  warn: number;
+  floor: number;
+  size: number;
+}
+
+export interface BoatDecor {
+  slot: string;
+  sprite: string;
+  x: number;
+  y: number;
+  width: number;
+}
+
+export interface Marker {
+  id: number;
+  kind: 'flare' | 'bait' | 'buoy';
+  x: number;
+  y: number;
+  time: number;
+}
 
 export interface AirBubble {
   id: string;
@@ -465,4 +589,18 @@ export interface GameState {
   skin: SkinId;
   seenChests: string[];
   entityId: number;
+  variant: GameVariant;
+  expansion: boolean;
+  tideScale: number;
+  tideHigh: boolean;
+  tideWarned: boolean;
+  drone: Drone;
+  collapse: Collapse | null;
+  rocks: FallingRock[];
+  markers: Marker[];
+  revealed: string[];
+  kitSlot: number;
+  reduceMotion: boolean;
+  boatDecor: BoatDecor[];
+  rarityShapes: boolean;
 }

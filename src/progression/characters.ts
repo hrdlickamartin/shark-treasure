@@ -1,6 +1,6 @@
 import type { SpriteName } from '../render/spriteAssets';
 
-export type CharacterId = 'maya' | 'nora' | 'idris' | 'rook' | 'voss' | 'diego' | 'elias';
+export type CharacterId = 'maya' | 'nora' | 'idris' | 'rook' | 'voss' | 'diego' | 'elias' | 'jun' | 'harlan' | 'pip';
 
 export interface Character {
   id: CharacterId;
@@ -67,6 +67,30 @@ export const CHARACTERS: Record<CharacterId, Character> = {
     bio: 'Zanechal ti loď, deník, mapy a šifry. Z legendy se postupně stává člověk, jehož rozhodnutí nebyla vždy správná.',
     portrait: 'portrait_elias',
     color: '#FFFFFF',
+  },
+  jun: {
+    id: 'jun',
+    name: 'Jun Arai',
+    role: 'Kartograf proudů a pilot dronů',
+    bio: 'Mapuje proudy bójemi a čte je jako notový zápis. Věří jen datům – dokud nepotká tvora, kterého nejde změřit.',
+    portrait: 'portrait_jun',
+    color: '#20A4B8',
+  },
+  harlan: {
+    id: 'harlan',
+    name: 'Harlan „Starý Sůl“ Pike',
+    role: 'Vůdce Bratrstva volných potápěčů',
+    bio: 'Eliasův parťák z mládí. Kdysi Strážce proudů viděl a slíbil Eliasovi, že o něm pomlčí. Ten slib ho tíží.',
+    portrait: 'portrait_harlan',
+    color: '#C9822A',
+  },
+  pip: {
+    id: 'pip',
+    name: 'Pip',
+    role: 'Mayin průzkumný dron',
+    bio: 'Zvědavý, lekavý a posedlý lesklými věcmi. Mluví pípáním, Maya ho překládá.',
+    portrait: 'icon_pip',
+    color: '#7A8CA8',
   },
 };
 

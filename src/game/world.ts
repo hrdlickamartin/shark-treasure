@@ -7,8 +7,9 @@ import { between, hash, mulberry32, pick, type Rng, weighted } from './rng';
 import { seabedY } from './terrain';
 import { SPIKE_CYCLE } from './systems/creatures';
 import { CHUNK_THREATS, SEA_COLUMN_GAP, thinThreats } from './density';
+import type { MaterialId } from './gear';
 import { chunkProps } from './systems/props';
-import type { Cave, Chest, ChestKind, Chunk, DecorItem, GameState, Hazard, HazardKind, Shark, SharkKind } from './types';
+import type { Cave, Chest, ChestKind, Chunk, DecorItem, GameState, Hazard, HazardKind, Prop, Shark, SharkKind } from './types';
 
 export const PROFILE_STEP = 24;
 
@@ -44,6 +45,7 @@ const DECOR: Record<string, DecorSpec> = {
   cave_crystal: { sprite: 'cave_crystal', min: 34, max: 56, sway: 0, sink: 6 },
   city_pillar: { sprite: 'city_pillar', min: 90, max: 140, sway: 0, sink: 10 },
   city_statue: { sprite: 'city_statue', min: 150, max: 200, sway: 0, sink: 12 },
+  tidewarden: { sprite: 'tidewarden', min: 760, max: 840, sway: 0, sink: 150 },
 };
 
 
@@ -56,13 +58,14 @@ function chestKindFor(r: Rng, regionId: number): ChestKind {
 function createChest(r: Rng, seed: number, regions: Region[], id: string, x: number, kind: ChestKind, regionId: number): Chest {
   const info = CHESTS[kind];
   const restY = seabedY(seed, x, regions) - info.width * 0.32;
+  const scale = kind === 'heavy' ? 1 + regions[regionId].tier * 0.3 : 1;
   return {
     id,
     kind,
     x,
     y: restY,
     restY,
-    value: Math.round(between(r, info.min, info.max) / 5) * 5,
+    value: Math.round((between(r, info.min, info.max) * scale) / 5) * 5,
     regionId,
     falling: false,
     vy: 0,
@@ -102,6 +105,7 @@ export function newShark(id: string, kind: SharkKind, x: number, y: number, rang
     maxHp: hp,
     dying: 0,
     hitFlash: 0,
+    exposed: false,
   };
 }
 
@@ -109,7 +113,7 @@ export function newHazard(id: string, kind: HazardKind, x: number, y: number, ex
   return { id, kind, x, y, homeX: x, baseY: y, anchorY: y, size: 0, angle: 0, phase: 0, alive: true, dir: 1, timer: 0, cooldown: 0, state: 0, vx: 0, vy: 0, link: null, ...extra };
 }
 
-export const isBossChunk = (state: GameState, index: number) => bossChunks(oceanOf(state)).includes(index);
+export const isBossChunk = (state: GameState, index: number) => (state.variant === 'legendary' ? index === 3 || index === -4 : bossChunks(oceanOf(state)).includes(index));
 
 function buildCave(r: Rng, seed: number, regions: Region[], x0: number): Cave | null {
   const bottom: number[] = [];
@@ -165,6 +169,89 @@ function addDecor(list: DecorItem[], r: Rng, seed: number, regions: Region[], ke
   });
 }
 
+function expansionChunk(state: GameState, index: number, x0: number, decor: DecorItem[], tier: number, regionId: number, cave: Cave | null, boss: boolean) {
+  const { seed } = state;
+  const ocean = oceanOf(state);
+  const regions = ocean.regions;
+  const r = mulberry32(hash(seed, index, 6262));
+  const distance = Math.abs(index);
+  const floorAt = (x: number) => seabedY(seed, x, regions);
+  const near = (x: number) => state.props.some((p) => p.quest && Math.abs(p.x - x) < 140);
+  if (cave && tier >= 2 && r() < (ocean.unstable ?? 0.25)) cave.unstable = true;
+  if (distance > 1 && r() < 0.6) {
+    const x = x0 + between(r, 60, CHUNK_W - 60);
+    if (!near(x)) state.props.push(materialProp(state, `${index}:mat`, x, weighted<MaterialId>(r, ocean.materials), 1 + (tier >= 3 ? 1 : 0) + (r() < 0.3 ? 1 : 0)));
+  }
+  const wreck = decor.find((d) => d.sprite === 'wreck' || d.sprite === 'ghost_ship');
+  if (wreck && r() < 0.8) {
+    const x = wreck.x + (r() - 0.5) * wreck.width * 0.5;
+    state.props.push(materialProp(state, `${index}:matw`, x, r() < 0.6 ? 'scrap' : 'rope', 2));
+  }
+  if (ocean.vents && distance > 0 && r() < 0.55) {
+    const x = x0 + between(r, 80, CHUNK_W - 80);
+    if (!near(x) && !cave) state.props.push({ id: `${index}:vent`, kind: 'vent', x, y: floorAt(x) - 6, lift: 6, quest: null, sprite: null, active: false, value: 0, taken: false, progress: r() * 8, phase: r() * 6 });
+  }
+  if (distance > 2 && !boss && !cave && tier >= 3 && r() < (ocean.heavy ?? 0.05)) {
+    const x = x0 + between(r, 80, CHUNK_W - 80);
+    state.chests.push(createChest(r, seed, regions, `${index}:heavy`, x, 'heavy', regionId));
+  }
+  if (distance > 2 && !boss && tier >= 2 && r() < (ocean.mimics ?? 0.08)) {
+    const x = x0 + between(r, 60, CHUNK_W - 60);
+    state.hazards.push(newHazard(`${index}:mimic`, 'mimic', x, floorAt(x) - 18, { anchorY: floorAt(x), phase: r() * 6 }));
+  }
+  const strait = ocean.id === 'riptide' || ocean.id === 'pacific';
+  if (distance > 2 && tier >= 3 && strait && r() < (ocean.id === 'riptide' ? 0.45 : 0.18)) {
+    const hy = between(r, SURFACE_SAFE + 60, floorAt(x0 + CHUNK_W / 2) - 100);
+    state.hazards.push(newHazard(`${index}:barr`, 'barracuda', x0 + CHUNK_W / 2, hy, { size: 5 + Math.floor(r() * 3), dir: r() < 0.5 ? 1 : -1, phase: r() * 6, timer: between(r, 0, 1.5) }));
+  }
+  if (distance > 2 && tier >= 2 && (strait || ocean.id === 'wandering') && r() < 0.28) {
+    const hx = x0 + between(r, 80, CHUNK_W - 80);
+    const hy = between(r, SURFACE_SAFE + 80, floorAt(hx) - 140);
+    state.hazards.push(newHazard(`${index}:siph`, 'siphon', hx, hy, { size: 4 + Math.floor(r() * 3), phase: r() * 6 }));
+  }
+  if (distance > 1 && tier >= 2 && (ocean.id === 'wandering' || ocean.id === 'pacific') && r() < 0.32) {
+    const hx = x0 + between(r, 50, CHUNK_W - 50);
+    state.hazards.push(newHazard(`${index}:pist`, 'pistol', hx, floorAt(hx) - 12, { dir: r() < 0.5 ? 1 : -1, anchorY: floorAt(hx), phase: r() * 6 }));
+  }
+  if (ocean.id === 'wandering' && distance > 1 && r() < 0.3) {
+    const fy = between(r, 90, floorAt(x0 + CHUNK_W / 2) - 160);
+    state.fish.push({ id: `${index}:young`, sprite: 'tidewarden_young', x: x0 + CHUNK_W / 2, y: fy, vx: (r() < 0.5 ? -1 : 1) * 22, minX: x0 - 300, maxX: x0 + CHUNK_W + 300, count: 1, phase: r() * 6, size: 120 });
+  }
+  if (ocean.id === 'riptide' && regionId === 2 && !boss && !cave && distance > 2 && index % 2 === 0) {
+    const gx = x0 + CHUNK_W * 0.6;
+    const id = `${index}:gate`;
+    state.props.push({ id, kind: 'gate', x: gx, y: floorAt(gx), lift: 0, quest: null, sprite: null, active: false, value: 0, taken: false, progress: 0, phase: 0, tag: 'gate' });
+    const lx = x0 + CHUNK_W * 0.22;
+    state.props.push({ id: `${id}:lever`, kind: 'lever', x: lx, y: floorAt(lx) - 26, lift: 26, quest: null, sprite: null, active: false, value: 0, taken: false, progress: 0, phase: 0, tag: `gate:${id}` });
+  }
+  if (ocean.id === 'riptide' && regionId === 1) {
+    const floor = floorAt(x0 + CHUNK_W / 2);
+    state.currents.push({ id: `${index}:channel`, x0, x1: x0 + CHUNK_W, y0: SURFACE_SAFE + 40, y1: Math.min(floor - 70, SURFACE_SAFE + 260), force: 120, lift: 0, tidal: true });
+  }
+  if (boss && ocean.boss === 'hollow') {
+    const center = x0 + CHUNK_W * 0.55;
+    [-150, 0, 150].forEach((dx, i) => {
+      const cx = center + dx;
+      state.props.push({ id: `${index}:chain${i}`, kind: 'chain', x: cx, y: floorAt(cx) - 30, lift: 30, quest: null, sprite: null, active: false, value: 0, taken: false, progress: 0, phase: i, tag: 'boss' });
+    });
+  }
+  if (boss && ocean.boss === 'maelstrom') {
+    [0.15, 0.9].forEach((t, i) => {
+      const lx = x0 + CHUNK_W * t;
+      state.props.push({ id: `${index}:vortex${i}`, kind: 'lever', x: lx, y: floorAt(lx) - 26, lift: 26, quest: null, sprite: null, active: false, value: 0, taken: false, progress: 0, phase: 0, tag: 'vortex' });
+    });
+  }
+  for (const rift of state.props.filter((p) => p.kind === 'rift' && Math.abs(p.x - (x0 + CHUNK_W / 2)) < CHUNK_W / 2)) {
+    const count = 1 + (r() < 0.5 ? 1 : 0);
+    for (let k = 0; k < count; k++) state.hazards.push(newHazard(`${index}:shadow${k}`, 'shadow', rift.x + (k === 0 ? -1 : 1) * 260, rift.y - 120, { phase: r() * 6, homeX: rift.x } as Partial<Hazard>));
+  }
+}
+
+export function materialProp(state: GameState, id: string, x: number, material: MaterialId, amount: number): Prop {
+  const y = seabedY(state.seed, x, oceanOf(state).regions) - 14;
+  return { id, kind: 'material', x, y, lift: 14, quest: null, sprite: null, active: false, value: amount, taken: false, progress: 0, phase: (x % 7) + amount, tag: material };
+}
+
 export function generateChunk(state: GameState, index: number): Chunk {
   const { seed } = state;
   const ocean = oceanOf(state);
@@ -215,7 +302,23 @@ export function generateChunk(state: GameState, index: number): Chunk {
     chest.boss = true;
     chest.value = 6000;
     state.chests.push(chest);
-    state.sharks.push(newShark(`${index}:boss`, ocean.boss, chest.x + 200, chest.y - 150, 260, true, r() * 10));
+    const bossShark = newShark(`${index}:boss`, ocean.boss, chest.x + 200, chest.y - 150, 260, true, r() * 10);
+    if (ocean.boss === 'maelstrom') {
+      bossShark.homeX = chest.x;
+      bossShark.homeY = chest.y - 300;
+      bossShark.y = bossShark.homeY;
+    }
+    if (ocean.boss === 'hollow') {
+      bossShark.homeX = chest.x + 60;
+      bossShark.range = 200;
+      bossShark.y = chest.y - 40;
+    }
+    if (state.variant === 'legendary') {
+      bossShark.hp *= 2;
+      bossShark.maxHp = bossShark.hp;
+      chest.value *= 2;
+    }
+    state.sharks.push(bossShark);
   } else if (cave) {
     const cx = x0 + between(r, CHUNK_W * 0.3, CHUNK_W * 0.7);
     const chest = createChest(r, seed, regions, `${index}:cave`, cx, chestKindFor(r, Math.min(CHEST_WEIGHTS.length - 1, tier + 1)), regionId);
@@ -350,7 +453,7 @@ export function generateChunk(state: GameState, index: number): Chunk {
   if (distance > 3 && (tier >= 2 || flow > 1) && r() < Math.min(0.7, 0.22 * flow)) {
     const floor = seabedY(seed, center, regions);
     const y0 = between(r, SURFACE_SAFE + 30, floor * 0.6);
-    state.currents.push({ id: `${index}:cur`, x0, x1: x0 + CHUNK_W, y0, y1: y0 + between(r, 90, 160), force: (r() < 0.5 ? -1 : 1) * between(r, 50, 85) * Math.min(1.5, Math.sqrt(flow)), lift: 0 });
+    state.currents.push({ id: `${index}:cur`, x0, x1: x0 + CHUNK_W, y0, y1: y0 + between(r, 90, 160), force: (r() < 0.5 ? -1 : 1) * between(r, 50, 85) * Math.min(1.5, Math.sqrt(flow)), lift: 0, tidal: (ocean.tide?.strength ?? 0) >= 0.6 });
   }
 
   if (distance > 1 && region.whales && r() < region.whales) {
@@ -385,9 +488,17 @@ export function generateChunk(state: GameState, index: number): Chunk {
     state.fish = state.fish.filter((f) => !f.id.startsWith(prefix) || !inRock(f.x, f.y));
   }
 
+  if (state.expansion && state.mode === 'sea') expansionChunk(state, index, x0, decor, tier, regionId, cave, boss);
   thinThreats(state, sharkStart, hazardStart, CHUNK_THREATS[tier], mulberry32(hash(seed, index, 4242)), 'x', SEA_COLUMN_GAP);
   chunkProps(state, index, x0, decor, tier, mulberry32(hash(seed, index, 5151)));
 
+  if (state.variant === 'free') {
+    const own = (id: string) => id.startsWith(`${index}:`);
+    state.chests = state.chests.filter((c) => !own(c.id));
+    state.sharks = state.sharks.filter((c) => !own(c.id));
+    state.hazards = state.hazards.filter((c) => !own(c.id));
+    state.coins = state.coins.filter((c) => !own(c.id));
+  }
   return { index, x0, decor, profile, top, regionId, palette: { sand: region.sand, sandDark: region.sandDark, sandEdge: region.sandEdge }, cave, boss };
 }
 

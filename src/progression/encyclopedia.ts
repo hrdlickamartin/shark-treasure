@@ -32,6 +32,15 @@ export const SPECIES: Species[] = [
   { id: 'leviathan', name: 'Leviatan', sprite: 'leviathan', group: 'Legendy', oceans: ['arctic'], research: 70 },
   { id: 'guardian', name: 'Strážce Atlantidy', sprite: 'guardian', group: 'Legendy', oceans: ['atlantis'], research: 70 },
   { id: 'abyssal', name: 'Tvor z hlubin', sprite: 'abyssal_creature', group: 'Legendy', oceans: ['abyss'], research: 90 },
+  { id: 'barracuda', name: 'Barakuda', sprite: 'barracuda', group: 'Ryby', oceans: ['riptide', 'pacific'], research: 18 },
+  { id: 'siphon', name: 'Řetězová medúza', sprite: 'siphon', group: 'Tvorové', oceans: ['riptide', 'pacific', 'wandering'], research: 22 },
+  { id: 'pistol', name: 'Krevetka pistolník', sprite: 'pistol_shrimp', group: 'Tvorové', oceans: ['wandering', 'pacific'], research: 20 },
+  { id: 'mimic', name: 'Mimikry chobotnice', sprite: 'mimic_octopus', group: 'Tvorové', oceans: 'all', research: 30 },
+  { id: 'shadow', name: 'Trhlinový stín', sprite: 'rift_shadow', group: 'Legendy', oceans: 'all', research: 45 },
+  { id: 'tidewarden_young', name: 'Mladý Strážce', sprite: 'tidewarden_young', group: 'Legendy', oceans: ['wandering'], research: 60 },
+  { id: 'vent', name: 'Dýchací průduch', sprite: 'reef_vent', group: 'Legendy', oceans: ['wandering'], research: 25 },
+  { id: 'maelstrom', name: 'Vládce proudů', sprite: 'maelstrom_eel', group: 'Legendy', oceans: ['riptide'], research: 80 },
+  { id: 'hollow', name: 'Dutá ulita', sprite: 'hollow_shell', group: 'Legendy', oceans: ['wandering'], research: 80 },
 ];
 
 export const speciesById = (id: string): Species | undefined => SPECIES.find((s) => s.id === id);

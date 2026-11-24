@@ -35,6 +35,13 @@ Nový prvek zařaď podle toho, jestli má být pod tmou (běžný objekt), nebo
 - Postavy a žraloci kreslení koukají doprava; doleva se otáčejí přes `flip` / `scaleX: -1`. Plynulé otočení řeší `turnPose` (bok ↔ čtvrtpohled `_q` sprite).
 - `RigSprite` rozřeže sprite na svislé pruhy podle `RIGS[name].cuts` a natáčí je kolem `pivots`; tak se vlní ocas žraloka a těla tvorů. Úhly pruhů počítají komponenty v `Entities.tsx` z času a fáze entity (`sharkAngles`, `anim.kick` potápěče).
 - `Preloader` předem načítá pozadí aktuálního oceánu, aby při potopení neproblikla.
+- `RigSprite` bez definice v `RIGS` vykreslí obyčejný obrázek; `SharkView` ho používá pro všechny žraloky a bosse.
+
+## Úskalí
+
+- `assets/fx/radial.png` je maska pro tmu (průhledný střed, tmavé okraje), ne záře. Záři kresli přes `SoftGlow` v `Tides.tsx` (soustředné kruhy).
+- Každý nový druh částice potřebuje barvu nebo vlastní větev v `ParticleView`, jinak je neviditelný.
+- Do `style` dávej jen stylové vlastnosti. Spread objektu s jinými klíči (např. `length`) na webu shodí celé vykreslení.
 
 ## Kde co je
 
@@ -45,3 +52,4 @@ Nový prvek zařaď podle toho, jestli má být pod tmou (běžný objekt), nebo
 | `Shaft.tsx` | stěny a vzduchové bubliny režimu `endless` |
 | `Background.tsx` | parallax pozadí a obloha podle počasí |
 | `Darkness.tsx` | tma, mlha, světlo potápěče, varování při nedostatku kyslíku |
+| `Tides.tsx` | prvky rozšíření: Pip a jeho světlo, brány, materiály, trhliny, průduchy, řetězy, značky, jeřáb, zvon, moduly na lodi, noví tvorové |

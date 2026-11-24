@@ -1,6 +1,6 @@
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
-import type { Ending as EndingId, SaveData } from '../progression/saveData';
-import { ENDING_ORDER, ENDING_PROMPT, endingAvailable, ENDINGS, guardianChecks, pearlLabel } from '../progression/story';
+import type { Ending as EndingId, SaveData, TideEnding } from '../progression/saveData';
+import { ENDING_ORDER, ENDING_PROMPT, endingAvailable, ENDINGS, guardianChecks, pearlLabel, TIDE_ENDINGS } from '../progression/story';
 import { GameButton } from './Button';
 import { SpeakerLine } from './Dialogue';
 import { Overlay, Panel, Title } from './Panel';
@@ -11,6 +11,8 @@ interface Props {
   height: number;
   onChoose: (ending: EndingId) => void;
   onClose: () => void;
+  tide?: TideEnding;
+  onTide?: (ending: TideEnding) => void;
 }
 
 function rewardText(id: EndingId): string {
@@ -18,7 +20,39 @@ function rewardText(id: EndingId): string {
   return [r.money ? `${r.money.toLocaleString('cs-CZ')} $` : '', r.pearls ? pearlLabel(r.pearls) : '', r.research ? `${r.research} dat` : ''].filter(Boolean).join(' • ');
 }
 
-export function Ending({ save, height, onChoose, onClose }: Props) {
+function TideOutcome({ id, save, height, onTide, onClose }: { id: TideEnding; save: SaveData; height: number; onTide?: (ending: TideEnding) => void; onClose: () => void }) {
+  const def = TIDE_ENDINGS[id];
+  const r = def.reward;
+  const reward = [r.money ? `${r.money.toLocaleString('cs-CZ')} $` : '', r.pearls ? pearlLabel(r.pearls) : '', r.research ? `${r.research} dat` : ''].filter(Boolean).join(' • ');
+  return (
+    <Overlay dim={0.85}>
+      <Panel style={[styles.panel, { maxHeight: height - 24 }]}>
+        <ScrollView style={styles.scroll} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+          <Text style={styles.kicker}>Živé proudy • konec rozšíření</Text>
+          <Title size={26} color={COLORS.gold}>
+            {def.title}
+          </Title>
+          <Text style={styles.text}>{def.text}</Text>
+          {def.epilogue.map((line, i) => (
+            <SpeakerLine key={i} line={line} compact />
+          ))}
+          <Text style={[styles.reward, styles.center]}>Odměna: {reward}</Text>
+        </ScrollView>
+        <GameButton
+          label="Pokračovat ve výpravách"
+          onPress={() => {
+            if (!save.tideEnding) onTide?.(id);
+            onClose();
+          }}
+          style={styles.center}
+        />
+      </Panel>
+    </Overlay>
+  );
+}
+
+export function Ending({ save, height, onChoose, onClose, tide, onTide }: Props) {
+  if (tide) return <TideOutcome id={tide} save={save} height={height} onTide={onTide} onClose={onClose} />;
   const chosen = save.ending;
   const checks = guardianChecks(save);
   return (
@@ -73,4 +107,5 @@ const styles = StyleSheet.create({
   reward: { color: COLORS.gold, fontFamily: FONTS.bodyHeavy, fontSize: 12 },
   check: { fontFamily: FONTS.bodyHeavy, fontSize: 11 },
   center: { alignSelf: 'center' },
+  kicker: { color: COLORS.aqua, fontFamily: FONTS.bodyHeavy, fontSize: 12, textAlign: 'center' },
 });

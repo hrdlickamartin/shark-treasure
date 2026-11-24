@@ -13,8 +13,11 @@ import { RigSprite } from './RigSprite';
 import { quarterWidth, Sprite, spriteHeight, turnPose } from './Sprite';
 import { SPRITES, type SpriteName } from './spriteAssets';
 import { RIGS } from './rigs';
+import { BoatModulesView, TideHazardView, TidePropView } from './Tides';
 
-export function ChestView({ chest, time, highlight }: { chest: Chest; time: number; highlight: boolean }) {
+const RARITY_SHAPES: Record<Chest['kind'], string> = { common: '●', uncommon: '■', rare: '◆', epic: '▲', legendary: '★', mystery: '?', jeweled: '✦', heavy: '⬢' };
+
+export function ChestView({ chest, time, highlight, shapes }: { chest: Chest; time: number; highlight: boolean; shapes?: boolean }) {
   const info = CHESTS[chest.kind];
   const bob = chest.falling ? 0 : Math.sin(chest.phase * 2) * 2.5;
   const pulse = 0.5 + Math.sin(time * 3 + chest.phase) * 0.25;
@@ -38,6 +41,7 @@ export function ChestView({ chest, time, highlight }: { chest: Chest; time: numb
         />
       )}
       <Sprite name={info.sprite} x={chest.x} y={chest.y + bob} width={info.width} rotate={chest.falling ? Math.sin(time * 6) * 8 : 0} />
+      {shapes && <Text style={[styles.rarity, { left: chest.x - 12, top: chest.y + bob - info.width * 0.6 - 18, color: info.glow ?? COLORS.white }]}>{RARITY_SHAPES[chest.kind]}</Text>}
       {chest.kind === 'legendary' && (
         <View style={[styles.sparkle, { left: chest.x + Math.cos(time * 2) * 26 - 3, top: chest.y + bob + Math.sin(time * 2.6) * 18 - 3 }]} />
       )}
@@ -105,6 +109,19 @@ export function SharkView({ shark }: { shark: Shark }) {
           angles={sharkAngles(info.sprite, shark.phase, shark.dying > 0 ? 0.3 : lunge)}
           scaleY={1 + Math.sin(shark.phase * 2) * 0.012 + pose.bounce}
           opacity={sideOpacity * fade}
+        />
+      )}
+      {shark.exposed && !shark.dying && (
+        <View
+          style={[
+            styles.weak,
+            {
+              left: shark.x + shark.facing * info.width * (shark.kind === 'maelstrom' ? 0.3 : 0.18) - 46,
+              top: shark.y - 46,
+              opacity: 0.55 + Math.sin(shark.phase * 2) * 0.3,
+              transform: [{ scale: 1 + Math.sin(shark.phase * 2) * 0.12 }],
+            },
+          ]}
         />
       )}
       {shark.mode === 'telegraph' && (
@@ -211,6 +228,12 @@ export function HazardView({ hazard, time }: { hazard: Hazard; time: number }) {
       return <ToxicView hazard={hazard} time={time} />;
     case 'spikes':
       return <SpikesView hazard={hazard} time={time} />;
+    case 'mimic':
+    case 'barracuda':
+    case 'siphon':
+    case 'pistol':
+    case 'shadow':
+      return <TideHazardView hazard={hazard} time={time} />;
     default:
       return <Sprite name="urchin" x={hazard.x} y={hazard.y} width={40} />;
   }
@@ -418,6 +441,7 @@ const PARTICLE_COLORS: Record<string, string> = {
   coin: COLORS.gold,
   boom: '#FF9A3C',
   splash: '#FFFFFF',
+  sand: '#E2C595',
 };
 
 export function ParticleView({ p }: { p: Particle }) {
@@ -443,6 +467,10 @@ export function ParticleView({ p }: { p: Particle }) {
         }}
       />
     );
+  }
+  if (p.kind === 'ring') {
+    const size = p.size * (1 + (1 - t) * 5);
+    return <View style={[styles.ring, { left: p.x - size / 2, top: p.y - size / 2, width: size, height: size, borderRadius: size, opacity: t }]} />;
   }
   if (p.kind === 'streak') {
     return <View style={[styles.streak, { left: p.x - p.size / 2, top: p.y, width: p.size, opacity: Math.sin(t * Math.PI) * 0.5 }]} />;
@@ -590,18 +618,13 @@ export function BoatView({ state }: { state: GameState }) {
   const rotate = Math.sin(time * 1.2) * 2.2 + clamp(boat.vx / 400, -1, 1) * -3;
   const p = 1 - boat.turnFx;
   const swing = boat.turnFx > 0 ? Math.sin(Math.PI * p) : 0;
+  const angle = rotate + (boat.turnFx > 0 ? Math.sin(2 * Math.PI * p) * 7 : 0);
   return (
-    <Sprite
-      name={sprite}
-      x={boat.x}
-      y={height * BOAT_SINK[level] + bob - swing * 10}
-      width={width}
-      anchor="bottom"
-      rotate={rotate + (boat.turnFx > 0 ? Math.sin(2 * Math.PI * p) * 7 : 0)}
-      flip={boat.shown < 0}
-      scaleX={1 - swing * 0.35}
-      scaleY={1 + swing * 0.08}
-    />
+    <View style={[styles.boatPivot, { left: boat.x, top: height * BOAT_SINK[level] + bob - swing * 10, transform: [{ rotate: `${angle}deg` }, { scaleX: 1 - swing * 0.35 }, { scaleY: 1 + swing * 0.08 }] }]}>
+      {state.boatDecor.some((d) => d.slot === 'mast') && <BoatModulesView state={{ ...state, boatDecor: state.boatDecor.filter((d) => d.slot === 'mast') }} x={0} y={0} width={width} height={height} flip={boat.shown < 0} />}
+      <Sprite name={sprite} x={0} y={0} width={width} anchor="bottom" flip={boat.shown < 0} />
+      <BoatModulesView state={{ ...state, boatDecor: state.boatDecor.filter((d) => d.slot !== 'mast') }} x={0} y={0} width={width} height={height} flip={boat.shown < 0} />
+    </View>
   );
 }
 
@@ -685,7 +708,7 @@ function PropSprite({ prop, time }: { prop: Prop; time: number }) {
     case 'merchant':
       return <Sprite name="boat_1" x={prop.x} y={prop.y + Math.sin(time * 1.4) * 2 - 30} width={170} flip />;
     default:
-      return null;
+      return <TidePropView prop={prop} time={time} />;
   }
 }
 
@@ -723,6 +746,9 @@ export function SonarRing({ x, y, progress, range }: { x: number; y: number; pro
 
 const styles = StyleSheet.create({
   glow: { position: 'absolute' },
+  rarity: { position: 'absolute', width: 24, textAlign: 'center', fontFamily: FONTS.title, fontSize: 16, ...textShadow },
+  weak: { position: 'absolute', width: 92, height: 92, borderRadius: 46, borderWidth: 4, borderColor: '#FFE45C', backgroundColor: 'rgba(255, 228, 92, 0.18)' },
+  boatPivot: { position: 'absolute', width: 1, height: 1, transformOrigin: 'top left' },
   school: { position: 'absolute', width: 1, height: 1 },
   echoRing: { position: 'absolute', borderWidth: 2, borderColor: COLORS.aqua },
   sos: { position: 'absolute', width: 44, height: 20, borderRadius: 10, backgroundColor: COLORS.coral, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: COLORS.navy },
@@ -772,5 +798,6 @@ const styles = StyleSheet.create({
     borderBottomColor: 'transparent',
     borderLeftColor: COLORS.coral,
   },
+  ring: { position: 'absolute', borderWidth: 2.5, borderColor: '#FFF4B0' },
   rain: { position: 'absolute', width: 2, backgroundColor: '#DDEEFF', transform: [{ rotate: '8deg' }] },
 });

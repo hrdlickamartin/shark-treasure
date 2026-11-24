@@ -10,8 +10,9 @@ export function canEmbark(save: SaveData): boolean {
 export function embarkSave(save: SaveData): SaveData {
   const veteran = perkLevel(save.perks, 'veteran') > 0;
   const expedition = save.expedition + 1;
-  const upgrades = { ...EMPTY_LEVELS } as UpgradeLevels;
+  const upgrades = { ...EMPTY_LEVELS, drone: save.upgrades.drone } as UpgradeLevels;
   for (const def of UPGRADES) {
+    if (def.id === 'drone') continue;
     if (def.id === 'boat') upgrades.boat = Math.min(maxLevel(def, expedition), perkLevel(save.perks, 'shipwright'));
     else if (veteran && unlocked(def, expedition)) upgrades[def.id] = 1;
   }

@@ -6,8 +6,8 @@ export const CHUNK_THREATS = [0, 2, 3, 3, 4, 4, 5, 5];
 export const SEA_COLUMN_GAP = 120;
 export const SHAFT_ROW_GAP = 140;
 
-const GUARDS: Hazard['kind'][] = ['crab', 'eel'];
-const GROUNDED: Hazard['kind'][] = ['urchin', 'spikes', 'crab', 'eel'];
+const GUARDS: Hazard['kind'][] = ['crab', 'eel', 'shadow'];
+const GROUNDED: Hazard['kind'][] = ['urchin', 'spikes', 'crab', 'eel', 'mimic', 'pistol'];
 
 export function shaftThreats(depthM: number): number {
   return Math.min(8, 3 + Math.floor(depthM / 100));

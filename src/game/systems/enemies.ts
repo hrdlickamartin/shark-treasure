@@ -9,6 +9,9 @@ import { caveAt } from '../world';
 import { damageDiver, ellipseHit } from './collision';
 import { updateAngler, updateRay, updateSpikes, updateToxic } from './creatures';
 import { burst, floatText, sfx, shake } from './effects';
+import { updateHollow, updateMaelstrom } from './bosses';
+import { updateBarracuda, updateMimic, updatePistol, updateShadow, updateSiphon } from './fauna';
+import { BAIT_TIME } from '../gear';
 
 const ACTIVE_DEPTH = 1800;
 
@@ -124,8 +127,23 @@ function updateShark(state: GameState, shark: Shark, dt: number) {
   const speedUp = (frenzy ? 1.2 : 1) * state.stats.sharkSpeed;
   shark.lungeCooldown = Math.max(0, shark.lungeCooldown - dt);
 
-  if (info.boss) {
+  const bait = !info.boss ? state.markers.find((m) => m.kind === 'bait' && Math.hypot(m.x - shark.x, m.y - shark.y) < 700) : undefined;
+  if (shark.kind === 'maelstrom') {
+    updateMaelstrom(state, shark, dt);
+  } else if (shark.kind === 'hollow') {
+    updateHollow(state, shark, dt);
+  } else if (info.boss) {
     updateMega(state, shark, dt);
+  } else if (bait) {
+    shark.alert = Math.max(0, shark.alert - dt);
+    shark.phase += dt * 10;
+    shark.mode = 'patrol';
+    const bx = bait.x - shark.x;
+    const by = bait.y - shark.y;
+    const bl = Math.hypot(bx, by) || 1;
+    const circle = bl < 60 ? Math.sin(shark.phase * 0.3) : 1;
+    steer(shark, (bx / bl) * info.chase * circle, (by / bl) * info.chase * 0.6, 2.5, dt);
+    if (bl < 80 && bait.time > BAIT_TIME - 0.1) floatText(state, 'Návnada!', bait.x, bait.y - 30, '#FF9A3C');
   } else {
     shark.alert = Math.max(0, shark.alert - dt);
     shark.phase += dt * (shark.mode === 'chase' || shark.mode === 'lunge' ? 13 : 6);
@@ -189,7 +207,7 @@ function updateShark(state: GameState, shark: Shark, dt: number) {
 
   shark.x += shark.vx * dt;
   shark.y += shark.vy * dt;
-  const floor = floorAt(state, shark.x) - info.width * 0.22;
+  const floor = floorAt(state, shark.x) - info.width * (shark.kind === 'hollow' ? 0.18 : 0.22);
   shark.y = clamp(shark.y, SURFACE_SAFE - 10, floor);
   if (state.mode === 'endless') shark.x = clampToShaft(state, shark.x, shark.y, info.width * 0.45);
   const cave = caveAt(state, shark.x);
@@ -419,6 +437,21 @@ export function updateEnemies(state: GameState, dt: number) {
         break;
       case 'spikes':
         updateSpikes(state, hazard);
+        break;
+      case 'mimic':
+        updateMimic(state, hazard, dt);
+        break;
+      case 'barracuda':
+        updateBarracuda(state, hazard, dt);
+        break;
+      case 'siphon':
+        updateSiphon(state, hazard, dt);
+        break;
+      case 'pistol':
+        updatePistol(state, hazard, dt);
+        break;
+      case 'shadow':
+        updateShadow(state, hazard, dt);
         break;
     }
   }

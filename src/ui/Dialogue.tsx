@@ -15,9 +15,10 @@ interface Props {
   money: number;
   onChoose: (optionId: string) => Line[] | null;
   onDone: () => void;
+  big?: boolean;
 }
 
-export function SpeakerLine({ line, compact }: { line: Line; compact?: boolean }) {
+export function SpeakerLine({ line, compact, big }: { line: Line; compact?: boolean; big?: boolean }) {
   const who = CHARACTERS[line.who];
   return (
     <View style={styles.speaker}>
@@ -26,13 +27,13 @@ export function SpeakerLine({ line, compact }: { line: Line; compact?: boolean }
       </View>
       <View style={styles.textBox}>
         <Text style={[styles.name, { color: who.color }]}>{who.name}</Text>
-        <Text style={[styles.text, compact && styles.textSmall]}>{line.text}</Text>
+        <Text style={[styles.text, compact && styles.textSmall, big && styles.textBig]}>{line.text}</Text>
       </View>
     </View>
   );
 }
 
-export function DialogueBox({ dialogue, width, bottom, canChoose, money, onChoose, onDone }: Props) {
+export function DialogueBox({ dialogue, width, bottom, canChoose, money, onChoose, onDone, big }: Props) {
   const [index, setIndex] = useState(0);
   const [outcome, setOutcome] = useState<Line[] | null>(null);
   const lines = outcome ?? dialogue.lines;
@@ -47,7 +48,7 @@ export function DialogueBox({ dialogue, width, bottom, canChoose, money, onChoos
     <View style={[styles.root, { bottom, width: Math.min(width - 24, 640) }]}>
       <TouchAction onFire={advance}>
         <View style={styles.box}>
-          <SpeakerLine line={line} />
+          <SpeakerLine line={line} big={big} />
           {!choosing && <Text style={styles.hint}>{last ? 'Klepni pro pokračování' : `Klepni (${index + 1}/${lines.length})`}</Text>}
         </View>
       </TouchAction>
@@ -77,10 +78,10 @@ export function DialogueBox({ dialogue, width, bottom, canChoose, money, onChoos
   );
 }
 
-export function RadioBubble({ line, top, bottom, left, width }: { line: Line; top?: number; bottom?: number; left?: number; width: number }) {
+export function RadioBubble({ line, top, bottom, left, width, big }: { line: Line; top?: number; bottom?: number; left?: number; width: number; big?: boolean }) {
   return (
     <View style={[styles.radio, left !== undefined && styles.radioLeft, { top, bottom, left, width: Math.min(width - 32, 420) }]} pointerEvents="none">
-      <SpeakerLine line={line} compact />
+      <SpeakerLine line={line} compact big={big} />
     </View>
   );
 }
@@ -95,6 +96,7 @@ const styles = StyleSheet.create({
   name: { fontFamily: FONTS.title, fontSize: 15, ...textShadow },
   text: { color: COLORS.white, fontFamily: FONTS.body, fontSize: 14, lineHeight: 20 },
   textSmall: { fontSize: 12, lineHeight: 16 },
+  textBig: { fontSize: 17, lineHeight: 23 },
   hint: { color: COLORS.muted, fontFamily: FONTS.bodyHeavy, fontSize: 11, textAlign: 'right' },
   choices: { gap: 6, alignItems: 'stretch' },
   radioLeft: { alignSelf: 'auto' },

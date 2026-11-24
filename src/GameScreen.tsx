@@ -6,18 +6,27 @@ import { audio, type MusicName } from './audio/audio';
 import { MAX_HEALTH, PX_PER_M } from './game/constants';
 import { createGame, newWorld, step, type WorldOptions } from './game/engine';
 import { SHAFT_UNLOCK_M } from './game/endless';
-import { OCEAN_ORDER, OCEANS, type OceanId } from './game/oceans';
+import { OCEAN_ORDER, OCEANS, reefShift, weekIndex, WORLD_OCEANS, type OceanId } from './game/oceans';
+import { pipKey } from './game/systems/drone';
+import { cycleKit, applyKit } from './game/systems/kit';
+import { SLOTS, MODULES } from './progression/modules';
+import { activeModules, expansionOn, huntProps, riftProps, weeklyOcean, weeklySeed } from './progression/tides';
+import { Port } from './ui/Port';
+import { discountFor } from './progression/factions';
+import { Modes } from './ui/Modes';
+import { CollapseFrame } from './ui/CollapseFrame';
 import { CHALLENGES, CONDITIONS, challengeFor, todayKey } from './game/modifiers';
 import { startDive, triggerSonar } from './game/systems/dive';
 import { cameraKey, fireHarpoon, fireRepellent, fireScooter, healDiver, launchBalloon, takePhoto, toggleCamera } from './game/systems/extras';
 import { objectiveProps } from './game/systems/props';
-import type { ChallengeId, GameEvent, GameState, Input } from './game/types';
+import type { ChallengeId, GameEvent, GameState, Input, GameVariant } from './game/types';
 import { Live, nextFrame } from './hooks/useFrame';
 import { useGameLoop } from './hooks/useGameLoop';
 import { useKeyboard } from './hooks/useKeyboard';
+import { useGamepad, type PadButton } from './hooks/useGamepad';
 import { activeQuests, CHAPTER_COUNT, photoMatches, questProps } from './progression/quests';
 import { photoMessage } from './progression/encyclopedia';
-import type { SaveData } from './progression/saveData';
+import type { SaveData, TideEnding } from './progression/saveData';
 import type { Line } from './progression/characters';
 import { dialogueFor, radioLine, type Dialogue } from './progression/dialogue';
 import { choiceAvailable } from './progression/progress';
@@ -44,11 +53,11 @@ import { Settings } from './ui/Settings';
 import { COLORS, FONTS, textShadow } from './ui/theme';
 import { UpgradeShop } from './ui/UpgradeShop';
 
-type Screen = 'menu' | 'play' | 'summary' | 'shop' | 'settings' | 'paused' | 'expedition' | 'worldmap' | 'logbook' | 'ending';
+type Screen = 'menu' | 'play' | 'summary' | 'shop' | 'settings' | 'paused' | 'expedition' | 'worldmap' | 'logbook' | 'ending' | 'port' | 'modes';
 
 const noop = () => {};
 
-const PRELOAD = Object.fromEntries(OCEAN_ORDER.map((id) => [id, OCEANS[id].backgrounds.map((b) => b.name)])) as Record<OceanId, BackgroundName[]>;
+const PRELOAD = Object.fromEntries(WORLD_OCEANS.map((id) => [id, OCEANS[id].backgrounds.map((b) => b.name)])) as Record<OceanId, BackgroundName[]>;
 
 interface Toast {
   text: string;
@@ -91,18 +100,29 @@ export function GameScreen() {
     calm: save.stats.dives < 3,
     shaftBest: save.shaftBest,
     ocean: save.ocean,
-    props: questProps(save.quests, save.oceans, save.flags, save.ocean),
+    props: [...questProps(save.quests, save.oceans, save.flags, save.ocean), ...riftProps(save, save.ocean), ...huntProps(save, save.ocean)],
     supplies: save.supplies,
+    expansion: expansionOn(save),
+    kit: save.kit,
+    tideScale: save.settings.slowTide ? 1.5 : 1,
+    reduceMotion: save.settings.reduceMotion,
+    rarityShapes: save.settings.rarityShapes,
+    boatDecor: Object.entries(activeModules(save)).map(([slot, id]) => {
+      const spot = SLOTS.find((sl) => sl.id === slot)!;
+      return { slot, sprite: MODULES[id!].sprite, x: spot.x, y: spot.y, width: spot.width };
+    }),
   });
-  const meta = { expedition: save.expedition, perks: save.perks, research: save.research };
+  const meta = { expedition: save.expedition, perks: save.perks, research: save.research, mods: save.mods.equipped, modules: activeModules(save) };
+  const startX = () => (OCEANS[save.ocean].moving ? reefShift(save.stats.dives) : 0);
   const statsWith = (challenge: ChallengeId | null) => statsFor(save.upgrades, save.relics, challenge, meta);
-  if (loaded && !gameRef.current) gameRef.current = createGame(statsWith(null), view, 0, optionsFor(null));
+  if (loaded && !gameRef.current) gameRef.current = createGame(statsWith(null), view, startX(), optionsFor(null));
   if (loaded && questsRef.current !== save.quests) {
     const current = gameRef.current;
     if (questsRef.current && current && current.phase === 'boat' && current.mode === 'sea' && screen === 'play') gameRef.current = newWorld(current, view, statsWith(current.challenge), optionsFor(current.challenge));
     questsRef.current = save.quests;
   }
-  const endingPending = save.storyChapter >= CHAPTER_COUNT && !save.ending;
+  const tideChoice = save.flags.find((f) => f.startsWith('tide_end:'))?.slice(9) as TideEnding | undefined;
+  const endingPending = (save.storyChapter >= CHAPTER_COUNT && !save.ending) || (!!tideChoice && !save.tideEnding);
   const todaysChallenge = save.challengeDone === todayKey() ? null : challengeFor(todayKey());
 
   useEffect(() => {
@@ -163,12 +183,15 @@ export function GameScreen() {
           showToast(photoMessage(save.encyclopedia, e.species, e.stars, e.prev, quest?.title ?? null), 3.2);
         } else if (e.type === 'merchant') {
           setMerchant(true);
+        } else if (e.type === 'bottle') {
+          progress.foundBottle();
+          showToast(`Útržek mapy pokladu! (${Math.min(3, save.hunt.pieces + 1)}/3)`);
         } else if (e.type === 'locked') {
           showToast('Tady mapa končí – další oceány najdeš na mapě světa');
         }
       }
     },
-    [progress, save.settings.haptics, save.encyclopedia, save.quests, save.oceans, save.flags, save.ocean, showToast],
+    [progress, save.settings.haptics, save.encyclopedia, save.quests, save.oceans, save.flags, save.ocean, save.hunt.pieces, showToast],
   );
 
   const pickMusic = (game: GameState, current: Screen): MusicName => {
@@ -190,15 +213,21 @@ export function GameScreen() {
 
   const running = loaded && appActive && screen !== 'paused' && !(screen === 'settings' && returnTo === 'paused');
 
+  const readPad = useGamepad();
+  const padRef = useRef<(button: PadButton) => void>(() => {});
+
   useGameLoop((dt) => {
     const game = gameRef.current;
     if (!game) return;
     const keyboard = keyboardRef.current;
     const playing = screenRef.current === 'play';
-    const input: Input = !playing ? { x: 0, y: 0 } : keyboard.x !== 0 || keyboard.y !== 0 ? keyboard : joystickRef.current;
+    const pad = readPad();
+    for (const button of pad.pressed) padRef.current(button);
+    const input: Input = !playing ? { x: 0, y: 0 } : keyboard.x !== 0 || keyboard.y !== 0 ? keyboard : pad.input.x !== 0 || pad.input.y !== 0 ? pad.input : joystickRef.current;
     const events = step(game, input, dt, viewRef.current);
     if (events.length) handleEvents(events);
     audio.setMusic(pickMusic(game, screenRef.current));
+    audio.setBiome(game.phase === 'dive' && screenRef.current === 'play' ? (game.ocean === 'riptide' ? 'riptide' : game.ocean === 'wandering' ? 'reef' : null) : null);
     const nearSurface = game.camera.y < 140;
     if (nearSurface !== ambientRef.current) {
       ambientRef.current = nearSurface;
@@ -278,13 +307,28 @@ export function GameScreen() {
     if (code === 'KeyF') fireScooter(game);
     if (code === 'KeyE') fireHarpoon(game);
     if (code === 'KeyC') cameraKey(game);
+    if (code === 'KeyG') pipKey(game);
+    if (code === 'KeyQ') applyKit(game);
+    if (code === 'KeyX') cycleKit(game);
   }, []);
+
+  const onPad = useCallback(
+    (button: PadButton) => {
+      if (button === 'pause') return togglePause();
+      if (button === 'action') return action();
+      const codes: Partial<Record<PadButton, string>> = { balloon: 'KeyB', harpoon: 'KeyE', pip: 'KeyG', kit: 'KeyQ', cycle: 'KeyX', camera: 'KeyC', medkit: 'KeyH', scooter: 'KeyF' };
+      const code = codes[button];
+      if (code) onKey(code);
+    },
+    [action, togglePause, onKey],
+  );
 
   useEffect(() => {
     actionRef.current = action;
     pauseRef.current = togglePause;
     keyRef.current = onKey;
-  }, [action, togglePause, onKey]);
+    padRef.current = onPad;
+  }, [action, togglePause, onKey, onPad]);
 
   if (!loaded || !gameRef.current) return <View style={styles.loading} />;
   const game = gameRef.current;
@@ -334,6 +378,22 @@ export function GameScreen() {
     audio.unlock();
     gameRef.current = createGame(statsWith(null), view, 0, { ...optionsFor(null), mode: 'endless', ocean: 'abyss', props: [], condition: 'normal' });
     showToast('Hlubinný ponor: jak hluboko se dostaneš? Sbírej kyslíkové bubliny.', 4);
+    setScreen('play');
+  };
+
+  const startMode = (variant: GameVariant, ocean?: OceanId) => {
+    audio.unlock();
+    const week = weekIndex();
+    const target = variant === 'weekly' ? weeklyOcean(save, week) : (ocean ?? save.ocean);
+    const options = { ...optionsFor(null), variant, ocean: target, props: variant === 'normal' ? optionsFor(null).props : [] };
+    if (variant === 'weekly') {
+      const conditions = ['normal', 'night', 'storm', 'gold'] as const;
+      options.seed = weeklySeed(week);
+      options.condition = conditions[week % conditions.length];
+    }
+    gameRef.current = createGame(statsWith(null), view, 0, options);
+    const label = variant === 'free' ? 'Volný průzkum: bez kyslíkového limitu, jen fotky a mapování.' : variant === 'weekly' ? `Týdenní expedice: ${OCEANS[target].czech}, stejný svět pro všechny.` : `Legendární expedice: odveta v oceánu ${OCEANS[target].czech}. Boss čeká hned za útesem.`;
+    showToast(label, 4);
     setScreen('play');
   };
 
@@ -414,6 +474,7 @@ export function GameScreen() {
                   <GameButton size={compactUi ? 'xs' : 'sm'} variant="blue" icon={<Icon name="icon_tank" size={20} />} label="Vylepšení" onPress={() => { setReturnTo('play'); setScreen('shop'); }} />
                   <GameButton size={compactUi ? 'xs' : 'sm'} variant="blue" icon={<Icon name="icon_story" size={20} />} label="Deník" onPress={() => { setReturnTo('play'); setScreen('logbook'); }} />
                   <GameButton size={compactUi ? 'xs' : 'sm'} variant="blue" icon={<Icon name="icon_map" size={20} />} label="Mapa" onPress={() => { setReturnTo('play'); setScreen('worldmap'); }} />
+                  {expansionOn(save) && <GameButton size={compactUi ? 'xs' : 'sm'} variant="gold" icon={<Icon name="icon_port" size={20} />} label="Přístav" onPress={() => { setReturnTo('play'); setScreen('port'); }} />}
                 </View>
                 {todaysChallenge && !game.challenge && game.mode === 'sea' && (
                   <GameButton size={compactUi ? 'xs' : 'sm'} variant="gold" icon={<Icon name="icon_calendar" size={20} />} label={`Výzva dne ×${CHALLENGES[todaysChallenge].reward.toLocaleString('cs-CZ')}`} onPress={startChallenge} />
@@ -445,7 +506,11 @@ export function GameScreen() {
                       onHarpoon={() => fireHarpoon(live)}
                       onCamera={() => toggleCamera(live)}
                       onShutter={() => takePhoto(live)}
+                      onPip={() => pipKey(live)}
+                      onKit={() => applyKit(live)}
+                      onKitCycle={() => cycleKit(live)}
                     />
+                    {live.collapse && <CollapseFrame time={live.collapse.time} reduceMotion={live.reduceMotion} />}
                     {live.diver.health < MAX_HEALTH * 0.3 && live.diver.state === 'diving' && (
                       <View pointerEvents="none" style={[StyleSheet.absoluteFill, styles.hurtVignette]} />
                     )}
@@ -471,6 +536,7 @@ export function GameScreen() {
           left={width > height ? insets.left + 160 : undefined}
           top={width > height ? undefined : insets.top + 175}
           bottom={width > height ? insets.bottom + 12 : undefined}
+          big={save.settings.bigText}
         />
       )}
 
@@ -483,6 +549,7 @@ export function GameScreen() {
             width={width}
             bottom={insets.bottom + 16}
             money={save.money}
+            big={save.settings.bigText}
             canChoose={(needs) => choiceAvailable(save, needs)}
             onChoose={(option) => {
               if (!dialog.choice) return null;
@@ -522,17 +589,20 @@ export function GameScreen() {
           shaftBest={save.shaftBest}
           expedition={save.expedition}
           onChallenge={startChallenge}
+          onModes={() => { audio.unlock(); setReturnTo('menu'); setScreen('modes'); }}
+          modesOpen={expansionOn(save)}
           challengeName={todaysChallenge ? CHALLENGES[todaysChallenge].name : null}
         />
       )}
       {screen === 'summary' && summary && (
-        <DiveSummary summary={summary} onContinue={continueAfterSummary} onShop={openShopFromSummary} maxHeight={height} />
+        <DiveSummary summary={summary} onContinue={continueAfterSummary} onShop={openShopFromSummary} maxHeight={height} pendingShards={save.shards.pending} onHandOver={(f) => { if (progress.handOver(f)) audio.play('buy'); }} />
       )}
       {screen === 'shop' && (
         <UpgradeShop
           money={save.money}
           levels={save.upgrades}
           expedition={save.expedition}
+          discount={discountFor(save.reputation, 'guild')}
           onBuy={buy}
           onBuySkin={(id) => {
             if (progress.buySkin(id)) audio.play('buy');
@@ -577,6 +647,11 @@ export function GameScreen() {
         <Ending
           save={save}
           height={height}
+          tide={save.ending && tideChoice && !save.tideEnding ? tideChoice : undefined}
+          onTide={(id) => {
+            progress.chooseTideEnding(id);
+            audio.play('success');
+          }}
           onChoose={(id) => {
             progress.chooseEnding(id);
             audio.play('success');
@@ -605,6 +680,19 @@ export function GameScreen() {
           </View>
         </View>
       )}
+      {screen === 'port' && (
+        <Port
+          save={save}
+          width={width}
+          height={height}
+          progress={progress}
+          onClose={() => {
+            if (gameRef.current?.phase === 'boat') gameRef.current = freshWorld(gameRef.current.challenge);
+            setScreen(returnTo);
+          }}
+        />
+      )}
+      {screen === 'modes' && <Modes save={save} width={width} height={height} onStart={startMode} onClose={() => setScreen(returnTo)} />}
       {screen === 'settings' && (
         <Settings settings={save.settings} onChange={progress.updateSettings} onReset={() => { progress.reset(); gameRef.current = null; setScreen('menu'); }} onClose={() => setScreen(returnTo)} />
       )}

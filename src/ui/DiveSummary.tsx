@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Animated, Easing, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { CHESTS } from '../game/catalog';
+import { CHESTS, SHARKS } from '../game/catalog';
+import { MATERIALS, type MaterialId } from '../game/gear';
+import { FACTION_IDS, FACTIONS, SHARD_REWARDS, type FactionId } from '../progression/factions';
 import { CHALLENGES, CONDITIONS } from '../game/modifiers';
 import { RELICS } from '../progression/relics';
 import { OCEANS } from '../game/oceans';
@@ -34,6 +36,11 @@ const REASONS: Record<DamageSource, string> = {
   ray: 'Zasáhl tě výboj elektrického rejnoka.',
   toxic: 'Otrávil tě toxický mrak.',
   spikes: 'Napíchl ses na ostnatou past.',
+  barracuda: 'Prolétlo tebou hejno barakud.',
+  siphon: 'Popálila tě řetězová medúza.',
+  pistol: 'Omráčila tě rázová vlna krevetky pistolníka.',
+  shadow: 'Dostal tě trhlinový stín.',
+  collapse: 'Zavalila tě hroutící se jeskyně.',
 };
 
 interface Props {
@@ -41,6 +48,8 @@ interface Props {
   onContinue: () => void;
   onShop: () => void;
   maxHeight: number;
+  pendingShards: number;
+  onHandOver: (faction: FactionId) => void;
 }
 
 function useCountUp(target: number, duration = 1200) {
@@ -66,7 +75,7 @@ function Row({ label, value, color = COLORS.white }: { label: string; value: str
   );
 }
 
-export function DiveSummary({ summary, onContinue, onShop, maxHeight }: Props) {
+export function DiveSummary({ summary, onContinue, onShop, maxHeight, pendingShards, onHandOver }: Props) {
   const { result, missions, missionReward } = summary;
   const endless = result.mode === 'endless';
   const paid = result.success || endless;
@@ -112,7 +121,7 @@ export function DiveSummary({ summary, onContinue, onShop, maxHeight }: Props) {
                 <Title color={COLORS.gold} size={40}>
                   +{total.toLocaleString('cs-CZ')} $
                 </Title>
-                {result.bossLoot && <Text style={styles.boss}>Ukradl jsi poklad Megalodona!</Text>}
+                {result.bossLoot && <Text style={styles.boss}>Poklad bosse je tvůj: {SHARKS[OCEANS[result.ocean].boss].name}!</Text>}
                 <Text style={styles.sub}>Poklad bezpečně doručen</Text>
               </>
             ) : (
@@ -140,6 +149,38 @@ export function DiveSummary({ summary, onContinue, onShop, maxHeight }: Props) {
               {summary.research > 0 && <Text style={styles.progressText}>+{summary.research} výzkumných dat</Text>}
               {summary.photos.length > 0 && <Text style={styles.progressText}>Katalog: {summary.photos.map((id) => speciesById(id)?.name ?? id).join(', ')}</Text>}
             </View>
+            {(Object.keys(summary.materials).length > 0 || Object.keys(summary.materialsLost).length > 0) && (
+              <View style={styles.matBox}>
+                <Text style={styles.progressText}>Materiály:</Text>
+                {(Object.entries(summary.materials) as [MaterialId, number][]).map(([id, n]) => (
+                  <View key={id} style={styles.mat}>
+                    <Icon name={MATERIALS[id].sprite} size={22} />
+                    <Text style={styles.matText}>+{n}</Text>
+                  </View>
+                ))}
+                {Object.keys(summary.materialsLost).length > 0 && <Text style={styles.lost}>polovina ztracena při nezdaru</Text>}
+              </View>
+            )}
+            {summary.contracts.map((c) => (
+              <Text key={c} style={styles.contract}>Zakázka splněna: {c}</Text>
+            ))}
+            {summary.safari && <Text style={styles.boss}>Fotosafari týdne splněno!</Text>}
+            {summary.weekly && <Text style={styles.boss}>Týdenní expedice: +3 perly</Text>}
+            {summary.hunt && <Text style={styles.boss}>Poklad z mapy nalezen! Bratrstvo je nadšené.</Text>}
+            {pendingShards > 0 && (
+              <View style={styles.shardCard}>
+                <View style={styles.shardHead}>
+                  <Icon name="atlantean_shard" size={34} />
+                  <Text style={styles.storyTitle}>Atlantský úlomek ×{pendingShards}: komu ho předáš?</Text>
+                </View>
+                <View style={styles.shardButtons}>
+                  {FACTION_IDS.map((f) => (
+                    <GameButton key={f} label={FACTIONS[f].name.split(' ')[0]} size="xs" variant="navy" icon={<Icon name={FACTIONS[f].icon} size={18} />} onPress={() => onHandOver(f)} />
+                  ))}
+                </View>
+                <Text style={styles.storyText}>{FACTION_IDS.map((f) => SHARD_REWARDS[f].text).join(' • ')}</Text>
+              </View>
+            )}
             {summary.levelUps.length > 0 && <Text style={styles.boss}>Úroveň průzkumníka {summary.levelUps[summary.levelUps.length - 1]}! +{summary.levelReward.toLocaleString('cs-CZ')} $</Text>}
             <View style={styles.table}>
               {endless ? (
@@ -220,6 +261,14 @@ export function DiveSummary({ summary, onContinue, onShop, maxHeight }: Props) {
 }
 
 const styles = StyleSheet.create({
+  matBox: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center', gap: 8 },
+  mat: { flexDirection: 'row', alignItems: 'center', gap: 2 },
+  matText: { color: COLORS.white, fontFamily: FONTS.title, fontSize: 14 },
+  lost: { color: COLORS.coral, fontFamily: FONTS.bodyHeavy, fontSize: 11 },
+  contract: { color: COLORS.seaweed, fontFamily: FONTS.bodyHeavy, fontSize: 12, textAlign: 'center' },
+  shardCard: { backgroundColor: 'rgba(16, 70, 132, 0.7)', borderRadius: 12, padding: 8, gap: 6, borderWidth: 2, borderColor: COLORS.aqua, alignSelf: 'stretch' },
+  shardHead: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  shardButtons: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, justifyContent: 'center' },
   progressRow: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 8 },
   progressText: { color: COLORS.aqua, fontFamily: FONTS.bodyHeavy, fontSize: 12 },
   story: { flexDirection: 'row', gap: 10, alignItems: 'center', backgroundColor: 'rgba(255, 191, 50, 0.15)', borderRadius: 12, padding: 10, borderWidth: 1.5, borderColor: COLORS.gold },

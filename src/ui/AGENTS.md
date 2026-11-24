@@ -12,6 +12,7 @@ Prezentační komponenty. Data a callbacky dostávají z `src/GameScreen.tsx`, k
 ## Dotykové ovládání
 
 - Herní tlačítka (ponor, akce ve vodě) jdou přes `TouchAction`: na nativní platformě reaguje na `onTouchStart` (okamžitě, a víc prstů najednou s joystickem), na webu přes `Pressable`. Pro herní akce ho používej místo `Pressable`.
+- Akce ponoru: Pip a spotřební výbava mají vlastní sloty v `DiveActions` (na výšku další buňky `GRID`, na šířku vnější oblouk); u výbavy se při víc druzích objeví malé tlačítko přepnutí.
 - `Joystick` sleduje svůj prst podle `identifier` (multitouch) a zapisuje do `inputRef`. Klávesnice má v `GameScreen` přednost, jakmile je stisknutá.
 - Překryvné panely ležící přes hrací plochu dostávají `pointerEvents="box-none"`, aby prázdná místa nepohlcovala dotyky. Na výšku dřív panel na lodi zakrýval joystick a loď nešla ovládat.
 
@@ -46,4 +47,8 @@ Hraje se na telefonech v obou orientacích, na tabletech i na webu. Cílová za�
 | `Expedition` | nová výprava (prestiž) a perky |
 | `Dialogue` | dialogy na lodi (`DialogueBox`) a rádio během ponoru (`RadioBubble`) |
 | `Ending` | volba konce příběhu |
-| `Settings`, `PauseMenu` | nastavení a pauza |
+| `Settings`, `PauseMenu` | nastavení (včetně přístupnosti: méně pohybu, pomalejší příliv, tvary rarity, větší text) a pauza |
+| `Port` | přístav rozšíření: zakázky a frakce, dílna (recepty, modifikace), loď (sloty a moduly) |
+| `Modes` | režimy rozšíření: volný průzkum, týdenní a legendární expedice, lov pokladů, fotosafari |
+| `CollapseFrame` | praskající rám obrazovky při kolapsu jeskyně (bez čísla) |
+| `ErrorBoundary` | záchrana při chybě vykreslení, obaluje `GameScreen` v `App.tsx` |

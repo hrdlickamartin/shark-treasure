@@ -25,6 +25,8 @@ Systémy mutují `state` přímo. Ven komunikují jen pomocnými funkcemi z `sys
 
 Toasty a rádio jsou eventy `{ type: 'toast' | 'radio' }`. UI na ně reaguje v `GameScreen.handleEvents`. Nový druh eventu přidej do unie `GameEvent` v `types.ts` a obsluž ho tam.
 
+Systémy rozšíření Živé proudy: `tide.ts` (příliv, brány), `drone.ts` (Pip), `collapse.ts` (hroutící se jeskyně a padající bloky), `kit.ts` (spotřební výbava, značky světlice/návnady/bóje), `haul.ts` (těžké truhly, jeřáb), `fauna.ts` (mimikry, barakudy, řetězová medúza, krevetka pistolník, trhlinový stín) a `bosses.ts` (Vládce proudů, Dutá ulita, `bossVulnerable`). Materiály a výbava jsou v `gear.ts`, konstruktory záznamu a dronu v `records.ts` (mimo `engine.ts`, aby nevznikl kruhový import se `systems/dive.ts`).
+
 Akce hráče jsou samostatné funkce volané z UI (`startDive`, `triggerSonar` v `dive.ts`; `fireHarpoon`, `launchBalloon`, `fireRepellent`, `healDiver`, `fireScooter`, `toggleCamera`, `takePhoto`, `cameraKey` v `extras.ts`). Kontrolují si cooldown a zásoby samy, UI je volá bez podmínek.
 
 ## Souřadnice
@@ -38,14 +40,17 @@ Akce hráče jsou samostatné funkce volané z UI (`startDive`, `triggerSonar` v
 
 - Generování světa je deterministické podle `state.seed`: `generateChunk` bere `mulberry32(hash(seed, index, salt))`, terén `seabedY` a propast `shaftWalls` stejně. Ve vzhledu úseků proto nepoužívej `Math.random`, jinak se úsek po přegenerování změní.
 - Za běhu (chování žraloků, částice, události) je `Math.random` v pořádku.
+- Prvky rozšíření v úseku (`expansionChunk` ve `world.ts`) berou vlastní generátor `hash(seed, index, 6262)`. Nový obsah přidávej tam nebo s dalším vlastním saltem; sdílený generátor úseku by posunul rozložení původních oceánů a rozbil jejich testy férovosti.
 - Pozice questových předmětů nezávisí na seedu, ale jen na oceánu a definici questu (`itemX`), takže přežijí přegenerování světa.
 
 ## Data místo kódu
 
-- `oceans.ts`: 8 oceánů (`OCEANS`, pořadí `OCEAN_ORDER`). Oceán obsahuje:
+- `oceans.ts`: 10 oceánů (`OCEANS`). `OCEAN_ORDER` drží 8 oceánů hlavní kampaně a určuje její kapitoly; oceány rozšíření jsou v `EXPANSION_OCEANS`, mapa a cestování používají `WORLD_OCEANS`. Oceán obsahuje:
   - regiony (`start`, `baseDepth`, `tier`, `decor`, `landmarks`, `caves`);
   - pozadí podle hloubky;
   - bosse a mechaniky (`temperature`, `fog`, `darkness`, `currents`, `puzzle`, `sealed`).
+
+  - materiály (`materials`), příliv (`tide`), u Putujícího útesu `moving`, `vents`, šance na mimikry, těžké truhly a nestabilní jeskyně.
 
   Nový oceán nebo lokace je nový řádek dat, ne nová větev kódu.
 - `catalog.ts`: truhlice (`CHESTS`, váhy podle regionu), žraloci (`SHARKS`; boss = `boss: true` a `hp > 1`, nikdy test na `kind === 'mega'`), poškození tvorů.
@@ -60,6 +65,8 @@ Akce hráče jsou samostatné funkce volané z UI (`startDive`, `triggerSonar` v
   - cíle (harpuna, foto, balón) žraloky s `dying` přeskakují.
 - Tvorové (`state.hazards`): mají `alive`. V moři mrtví tvorové v poli zůstávají a systémy i render je přeskakují podle `alive`; režim `endless` průběžně zahazuje entity nad kamerou.
 - Simulují se jen entity v dosahu kolem potápěče: `ACTIVE_RANGE` vodorovně (`constants.ts`), `ACTIVE_DEPTH` svisle (`systems/enemies.ts`).
+- Bossové s puzzlem (`maelstrom`, `hollow`) mají vlastní update v `bosses.ts`; `bossVulnerable` rozhoduje, jestli harpuna zraní, a `shark.exposed` říká renderu, kdy ukázat slabé místo.
+- Pole `prop.phase` se obecně zvyšuje v `updateProps`; brány ho používají jako stav animace (0–1), proto jsou z obecného přičítání vyřazené.
 - `damageDiver` v `collision.ts` je jediná cesta ke zranění. Řeší nezranitelnost, brnění, odhození, ztrátu nesené truhlice a záznam do `record`.
 - Výsledek ponoru skládá `computeResult` / `finishDive` v `dive.ts` do `DiveResult`. Co má jít do save (fotky, objevy, aktivace, relikvie), musí být ve `state.record` a odtud v `DiveResult`.
 - Režim `endless` (UI „Hlubinný ponor“): svislá propast místo úseků (`endless.ts`), jiné generování i výplata. Jmenuje se tak, aby nekolidoval s oceánem Abyss.

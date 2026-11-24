@@ -4,7 +4,21 @@ import { regionIndexAt } from '../regions';
 import { CHALLENGES, CONDITIONS } from '../modifiers';
 import type { DiveResult, GameState } from '../types';
 import { BALLOON_HAUL_RANGE, submarineSpot } from './extras';
+import type { MaterialCounts } from '../gear';
 import { bubble, burst, haptic, sfx } from './effects';
+import { newDrone, newRecord } from '../records';
+
+function splitMaterials(materials: MaterialCounts, success: boolean): { kept: MaterialCounts; lost: MaterialCounts } {
+  if (success) return { kept: { ...materials }, lost: {} };
+  const kept: MaterialCounts = {};
+  const lost: MaterialCounts = {};
+  for (const [id, count] of Object.entries(materials) as [keyof MaterialCounts, number][]) {
+    const keep = Math.floor(count / 2);
+    if (keep > 0) kept[id] = keep;
+    if (count - keep > 0) lost[id] = count - keep;
+  }
+  return { kept, lost };
+}
 
 export function greedMultiplier(count: number): number {
   if (count >= 4) return 2;
@@ -35,6 +49,7 @@ export function computeResult(state: GameState, success: boolean): DiveResult {
   const rescueBonus = success ? state.props.filter((p) => p.kind === 'survivor' && !p.quest && diver.cargo.includes(p.id)).reduce((sum, p) => sum + p.value, 0) : 0;
   const base = chestValue + greedBonus + conditionBonus + relicBonus + expeditionBonus + coins + depthBonus + noHitBonus + insured + rescueBonus;
   const challengeBonus = success && state.challenge ? Math.round(base * (CHALLENGES[state.challenge].reward - 1)) : 0;
+  const materials = splitMaterials(record.materials, success || endless);
   return {
     mode: state.mode,
     ocean: state.ocean,
@@ -75,6 +90,14 @@ export function computeResult(state: GameState, success: boolean): DiveResult {
     minX: record.minX,
     maxX: record.maxX,
     discoveries: [...record.discoveries],
+    materials: materials.kept,
+    materialsLost: materials.lost,
+    kitUsed: { ...record.kitUsed },
+    scans: [...record.scans],
+    escapes: record.escapes,
+    gates: record.gates,
+    heavy: delivered.filter((c) => c.kind === 'heavy').length,
+    variant: state.variant,
   };
 }
 
@@ -119,7 +142,20 @@ export function startDive(state: GameState) {
   state.shaftMark = 0;
   state.lastDamage = null;
   state.alarmTimer = 0;
-  state.record = { startTime: state.time, maxDepth: 0, hits: 0, regionMax: regionIndexAt(oceanOf(state).regions, diver.x), fullWarned: -10, pockets: 0, balloonsSent: 0, minX: diver.x, maxX: diver.x, discoveries: [], photos: [], activated: [], cut: 0 };
+  state.record = newRecord(state.time, diver.x, regionIndexAt(oceanOf(state).regions, diver.x));
+  diver.anchor = 0;
+  diver.immune = 0;
+  diver.tow = false;
+  diver.reserveUsed = false;
+  diver.deflectUsed = false;
+  diver.canisterUsed = false;
+  diver.bellUsed = false;
+  diver.turnBoost = 0;
+  state.collapse = null;
+  state.rocks = [];
+  state.markers = [];
+  state.revealed = [];
+  state.drone = newDrone(diver.x, diver.y - 30);
   state.sonarTime = 0;
   state.sonarCooldown = 0;
   for (let i = 0; i < 14; i++) {
@@ -237,7 +273,7 @@ export function finishDive(state: GameState, success: boolean) {
   const { diver } = state;
   const result = computeResult(state, success);
   state.balloons = [];
-  const quick = success && result.chests.length === 0 && result.coins === 0 && result.delivered.length === 0 && result.activated.length === 0 && result.photos.length === 0 && result.duration < 5;
+  const quick = success && result.chests.length === 0 && result.coins === 0 && result.delivered.length === 0 && result.activated.length === 0 && result.photos.length === 0 && Object.keys(result.materials).length === 0 && Object.keys(result.kitUsed).length === 0 && result.duration < 5;
   diver.state = 'boat';
   diver.x = climbGeometry(state).deckX;
   diver.y = BOAT_DECK_Y;

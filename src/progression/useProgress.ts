@@ -4,13 +4,18 @@ import type { DiveResult, SkinId } from '../game/types';
 import { SKINS } from './skins';
 import { DEFAULT_SAVE, loadSave, type SaveData, writeSave } from './save';
 import { canEmbark, embarkSave } from './embark';
-import { applyChoice, applyDive, type ResultSummary } from './progress';
+import { applyChoice, applyDive, resettle, type ResultSummary } from './progress';
+import type { ModId, ModSlot } from './crafting';
+import { discountFor, type FactionId } from './factions';
+import type { ModuleId, ModuleSlot } from './modules';
+import { addBottle, buyMapPiece, buyModule, claimContract, craft, equipMod, equipModule, handOverShard, researchCost } from './tides';
+import { todayKey } from '../game/modifiers';
 import type { Line } from './characters';
 import { dialogueFor } from './dialogue';
 import { questById } from './quests';
 import { canResearch, RESEARCH } from './research';
-import type { Ending } from './saveData';
-import { endingAvailable, ENDINGS } from './story';
+import { EXPANSION_FLAG, expansionIntro, type Ending, type TideEnding } from './saveData';
+import { endingAvailable, ENDINGS, TIDE_ENDINGS } from './story';
 import { PERKS, perkCost, perkLevel, type PerkId } from './expedition';
 import { maxLevel, unlocked, UPGRADES, upgradeCost, type UpgradeId } from './upgrades';
 
@@ -40,8 +45,8 @@ export function useProgress() {
       const current = saveRef.current;
       const def = UPGRADES.find((u) => u.id === id)!;
       const level = current.upgrades[id];
-      if (level >= maxLevel(def, current.expedition) || !unlocked(def, current.expedition)) return false;
-      const cost = upgradeCost(def, level);
+      if (level >= maxLevel(def, current.expedition) || !unlocked(def, current.expedition) || (def.expansion && level === 0)) return false;
+      const cost = Math.round(upgradeCost(def, level) * discountFor(current.reputation, 'guild'));
       if (current.money < cost) return false;
       commit({ ...current, money: current.money - cost, upgrades: { ...current.upgrades, [id]: level + 1 } });
       return true;
@@ -62,8 +67,9 @@ export function useProgress() {
     (id: string): boolean => {
       const current = saveRef.current;
       const def = RESEARCH.find((r) => r.id === id);
-      if (!def || !canResearch(def, current.research, current.researchData)) return false;
-      commit({ ...current, researchData: current.researchData - def.cost, research: [...current.research, def.id] });
+      const cost = def ? researchCost(current, def.cost) : 0;
+      if (!def || !canResearch({ ...def, cost }, current.research, current.researchData)) return false;
+      commit({ ...current, researchData: current.researchData - cost, research: [...current.research, def.id] });
       return true;
     },
     [commit],
@@ -104,8 +110,9 @@ export function useProgress() {
       if (current.ending || !endingAvailable(ending, current)) return;
       const reward = ENDINGS[ending].reward;
       const upgrades = ending === 'sacrifice' ? { ...current.upgrades, boat: Math.max(0, current.upgrades.boat - 2) } : current.upgrades;
-      const flags = ending === 'power' ? [...current.flags, 'anomalies'] : current.flags;
-      commit({ ...current, ending, upgrades, flags, money: current.money + reward.money, pearls: current.pearls + reward.pearls, researchData: current.researchData + reward.research });
+      const flags = [...new Set([...current.flags, ...(ending === 'power' ? ['anomalies'] : []), EXPANSION_FLAG])];
+      const pendingDialogs = [...current.pendingDialogs, ...expansionIntro(ending).filter((d) => !current.pendingDialogs.includes(d))];
+      commit({ ...current, ending, upgrades, flags, pendingDialogs, tideChapter: Math.max(current.tideChapter, 9), money: current.money + reward.money, pearls: current.pearls + reward.pearls, researchData: current.researchData + reward.research });
     },
     [commit],
   );
@@ -173,6 +180,34 @@ export function useProgress() {
     [commit],
   );
 
+  const apply = useCallback(
+    (next: SaveData | null): boolean => {
+      if (!next) return false;
+      commit(resettle(next));
+      return true;
+    },
+    [commit],
+  );
+
+  const craftItem = useCallback((id: string) => apply(craft(saveRef.current, id)), [apply]);
+  const setMod = useCallback((slot: ModSlot, id: ModId | null) => apply(equipMod(saveRef.current, slot, id)), [apply]);
+  const purchaseModule = useCallback((id: ModuleId) => apply(buyModule(saveRef.current, id)), [apply]);
+  const setModule = useCallback((slot: ModuleSlot, id: ModuleId | null) => apply(equipModule(saveRef.current, slot, id)), [apply]);
+  const handOver = useCallback((faction: FactionId) => apply(handOverShard(saveRef.current, faction)), [apply]);
+  const claim = useCallback((id: string) => apply(claimContract(saveRef.current, todayKey(), id)), [apply]);
+  const buyMap = useCallback(() => apply(buyMapPiece(saveRef.current)), [apply]);
+  const foundBottle = useCallback(() => apply(addBottle(saveRef.current)), [apply]);
+
+  const chooseTideEnding = useCallback(
+    (id: TideEnding) => {
+      const current = saveRef.current;
+      if (current.tideEnding) return;
+      const reward = TIDE_ENDINGS[id].reward;
+      commit({ ...current, tideEnding: id, money: current.money + reward.money, pearls: current.pearls + reward.pearls, researchData: current.researchData + reward.research, tideChapter: 13 });
+    },
+    [commit],
+  );
+
   const markTutorial = useCallback(() => {
     commit({ ...saveRef.current, tutorialSeen: true });
   }, [commit]);
@@ -181,5 +216,5 @@ export function useProgress() {
     commit({ ...DEFAULT_SAVE, settings: saveRef.current.settings });
   }, [commit]);
 
-  return { save, loaded, buy, buySkin, buyPerk, embark, applyResult, learn, travel, addMoney, buySupplies, chooseEnding, dismissDialog, choose, updateSettings, markTutorial, reset };
+  return { save, loaded, buy, buySkin, buyPerk, embark, applyResult, learn, travel, addMoney, buySupplies, chooseEnding, dismissDialog, choose, updateSettings, markTutorial, reset, craftItem, setMod, purchaseModule, setModule, handOver, claim, buyMap, foundBottle, chooseTideEnding };
 }

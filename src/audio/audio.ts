@@ -3,6 +3,15 @@ import type { SfxName } from '../game/types';
 
 export type MusicName = 'menu' | 'shallow' | 'deep' | 'shop';
 
+export type BiomeName = 'riptide' | 'reef';
+
+const BIOME_SOURCES: Record<BiomeName, number> = {
+  riptide: require('../../assets/audio/amb_riptide.mp3'),
+  reef: require('../../assets/audio/amb_reef.mp3'),
+};
+
+const BIOME_VOLUME = 0.5;
+
 const SFX_SOURCES: Record<SfxName, number> = {
   swim: require('../../assets/audio/swim.mp3'),
   bubbles: require('../../assets/audio/bubbles.mp3'),
@@ -22,6 +31,10 @@ const SFX_SOURCES: Record<SfxName, number> = {
   zap: require('../../assets/audio/zap.mp3'),
   drop: require('../../assets/audio/drop.mp3'),
   waves: require('../../assets/audio/waves.mp3'),
+  horn: require('../../assets/audio/horn.mp3'),
+  pip: require('../../assets/audio/pip.mp3'),
+  crumble: require('../../assets/audio/crumble.mp3'),
+  gate: require('../../assets/audio/gate.mp3'),
 };
 
 const MUSIC_SOURCES: Record<MusicName, number> = {
@@ -42,6 +55,8 @@ class AudioManager {
   private wanted: MusicName | null = null;
   private ambient: AudioPlayer | null = null;
   private ambientOn = false;
+  private biome: BiomeName | null = null;
+  private biomePlayers = new Map<BiomeName, AudioPlayer>();
   private fadeTimer: ReturnType<typeof setInterval> | null = null;
   private unlocked = false;
   musicEnabled = true;
@@ -61,6 +76,9 @@ class AudioManager {
     this.current = null;
     if (wanted) this.setMusic(wanted);
     if (this.ambientOn) this.setAmbient(true);
+    const biome = this.biome;
+    this.biome = null;
+    this.setBiome(biome);
   }
 
   private sfxPlayer(name: SfxName): AudioPlayer {
@@ -111,6 +129,24 @@ class AudioManager {
     } catch {}
   }
 
+  setBiome(name: BiomeName | null) {
+    if (name === this.biome) return;
+    this.biome = name;
+    if (!this.unlocked) return;
+    try {
+      for (const [key, player] of this.biomePlayers) if (key !== name) player.pause();
+      if (!name || !this.sfxEnabled) return;
+      let player = this.biomePlayers.get(name);
+      if (!player) {
+        player = createAudioPlayer(BIOME_SOURCES[name]);
+        player.loop = true;
+        this.biomePlayers.set(name, player);
+      }
+      player.volume = BIOME_VOLUME;
+      player.play();
+    } catch {}
+  }
+
   setMusic(name: MusicName | null) {
     this.wanted = name;
     if (!this.unlocked || name === this.current) return;
@@ -156,6 +192,7 @@ class AudioManager {
 
   pauseAll() {
     for (const p of this.musicPlayers.values()) p.pause();
+    for (const p of this.biomePlayers.values()) p.pause();
     this.ambient?.pause();
   }
 
@@ -164,6 +201,9 @@ class AudioManager {
     this.current = null;
     this.setMusic(wanted);
     this.setAmbient(this.ambientOn);
+    const biome = this.biome;
+    this.biome = null;
+    this.setBiome(biome);
   }
 }
 

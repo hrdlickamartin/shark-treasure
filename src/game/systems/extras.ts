@@ -6,6 +6,7 @@ import { floorAt } from '../terrain';
 import { caveAt } from '../world';
 import { ellipseHit } from './collision';
 import { burst, floatText, haptic, sfx, shake } from './effects';
+import { bossVulnerable, deflectHarpoon } from './bosses';
 
 export const BALLOON_HAUL_RANGE = 1100;
 export const MEDKIT_HEAL = 50;
@@ -18,6 +19,15 @@ export const SUB_RADIUS = 80;
 
 export const submarineDepthM = (level: number) => (level ? 10 + level * 15 : 0);
 
+export const BELL_DEPTH = 250;
+export const BELL_RADIUS = 70;
+
+export function bellSpot(state: GameState): { x: number; y: number } | null {
+  if (!state.stats.bell) return null;
+  const x = state.boat.x - 110;
+  return { x, y: Math.min(BELL_DEPTH, floorAt(state, x) - 70) };
+}
+
 export function submarineSpot(state: GameState): { x: number; y: number } | null {
   if (state.stats.submarine <= 0) return null;
   const x = state.boat.x + 140;
@@ -25,7 +35,10 @@ export function submarineSpot(state: GameState): { x: number; y: number } | null
   return { x, y };
 }
 
-const HARPOON_PREY = new Set(['jelly', 'octopus', 'eel', 'crab', 'angler', 'ray']);
+const HARPOON_PREY = new Set(['jelly', 'octopus', 'eel', 'crab', 'angler', 'ray', 'barracuda', 'pistol', 'siphon']);
+const NET_PREY = new Set(['jelly', 'octopus', 'eel', 'crab', 'ray', 'pistol', 'barracuda']);
+
+const preyable = (h: Hazard) => h.alive && (HARPOON_PREY.has(h.kind) || (h.kind === 'shadow' && h.state === 1));
 export const HARPOON_SPEED = 1100;
 export const HARPOON_COOLDOWN = 0.7;
 export const SHARK_DEATH_TIME = 1.4;
@@ -34,7 +47,7 @@ export const BOSS_DEATH_TIME = 2.2;
 export function harpoonTarget(state: GameState): HarpoonTarget | null {
   const { diver } = state;
   let best: HarpoonTarget | null = null;
-  let bestD = HARPOON_RANGE;
+  let bestD = HARPOON_RANGE * state.stats.harpoonRange;
   const consider = (kind: HarpoonTarget['kind'], id: string, x: number, y: number, reach: number, boss: boolean) => {
     const dx = (x - diver.x) * diver.facing;
     const dy = Math.abs(y - diver.y);
@@ -49,7 +62,7 @@ export function harpoonTarget(state: GameState): HarpoonTarget | null {
     consider('shark', shark.id, shark.x, shark.y, info.width * 0.3, !!info.boss);
   }
   for (const h of state.hazards) {
-    if (h.alive && HARPOON_PREY.has(h.kind)) consider('hazard', h.id, h.x, h.y, 20, false);
+    if (preyable(h)) consider('hazard', h.id, h.x, h.y, 20, false);
   }
   return best;
 }
@@ -61,7 +74,8 @@ export function fireHarpoon(state: GameState) {
   const target = harpoonTarget(state);
   const sx = diver.x + diver.facing * 34;
   const sy = diver.y + 4;
-  const tx = target ? target.x : sx + diver.facing * HARPOON_RANGE;
+  const range = HARPOON_RANGE * state.stats.harpoonRange;
+  const tx = target ? target.x : sx + diver.facing * range;
   const ty = target ? target.y : sy;
   const len = Math.hypot(tx - sx, ty - sy) || 1;
   state.harpoonShots.push({
@@ -70,7 +84,7 @@ export function fireHarpoon(state: GameState) {
     y: sy,
     vx: ((tx - sx) / len) * HARPOON_SPEED,
     vy: ((ty - sy) / len) * HARPOON_SPEED,
-    life: target ? 1.2 : HARPOON_RANGE / HARPOON_SPEED,
+    life: target ? 1.2 : range / HARPOON_SPEED,
     target: target ? { kind: target.kind, id: target.id } : null,
   });
   burst(state, 'bubble', sx, sy, 8, 90, 0.6, 5);
@@ -86,6 +100,10 @@ export function fireHarpoon(state: GameState) {
 
 function hitShark(state: GameState, shark: Shark) {
   const info = SHARKS[shark.kind];
+  if (!bossVulnerable(state, shark)) {
+    deflectHarpoon(state, shark);
+    return;
+  }
   shark.hp -= 1;
   shark.hitFlash = 0.35;
   shark.alert = 0;
@@ -103,6 +121,7 @@ function hitShark(state: GameState, shark: Shark) {
     return;
   }
   shark.dying = info.boss ? BOSS_DEATH_TIME : SHARK_DEATH_TIME;
+  if (info.boss) state.record.discoveries.push(`defeated:${shark.kind}`);
   shark.mode = 'tired';
   shark.vx = 0;
   shark.vy = 0;
@@ -115,6 +134,18 @@ function hitShark(state: GameState, shark: Shark) {
 
 function hitHazard(state: GameState, hazard: Hazard) {
   hazard.alive = false;
+  if (state.stats.net && NET_PREY.has(hazard.kind)) {
+    const tag = `net:${hazard.kind}`;
+    if (!state.record.scans.includes(tag)) state.record.scans.push(tag);
+    const existing = state.record.photos.find((p) => p.species === hazard.kind);
+    if (existing) existing.stars = 3;
+    else state.record.photos.push({ species: hazard.kind, stars: 3 });
+    burst(state, 'bubble', hazard.x, hazard.y, 12, 80, 1, 6);
+    floatText(state, 'Chyceno do sítě!', hazard.x, hazard.y - 40, '#20D4E8');
+    sfx(state, 'collect', 0.7);
+    haptic(state, 'success');
+    return;
+  }
   burst(state, 'spark', hazard.x, hazard.y, 10, 130, 0.45, 5);
   burst(state, 'bubble', hazard.x, hazard.y, 10, 80, 1, 6);
   floatText(state, 'Zásah!', hazard.x, hazard.y - 40, '#FFBF32');
@@ -158,7 +189,21 @@ function updateHarpoons(state: GameState, dt: number) {
   if (state.harpoonAim) discover(state, 'harpoon', 'Cíl na mušce! Vystřel harpunou.');
 }
 
-const PHOTO_HAZARDS = new Set(['jelly', 'octopus', 'eel', 'crab', 'urchin', 'ray', 'angler']);
+const PHOTO_HAZARDS = new Set(['jelly', 'octopus', 'eel', 'crab', 'urchin', 'ray', 'angler', 'barracuda', 'siphon', 'pistol', 'mimic', 'shadow']);
+
+function sharkBehavior(shark: Shark): string | undefined {
+  if (shark.mode === 'lunge' || shark.mode === 'charge') return 'attack';
+  if (shark.mode === 'telegraph') return 'warning';
+  return undefined;
+}
+
+function hazardBehavior(h: Hazard): string | undefined {
+  if (h.kind === 'ray' && h.state >= 1) return 'discharge';
+  if (h.kind === 'pistol' && h.state >= 1) return 'shot';
+  if (h.kind === 'eel' && h.state >= 1) return 'attack';
+  if (h.kind === 'mimic' && h.state === 1) return 'revealed';
+  return undefined;
+}
 
 export const photoRange = (camera: number) => (camera ? 260 + camera * 60 : 0);
 
@@ -167,15 +212,19 @@ interface PhotoTarget {
   x: number;
   y: number;
   stars: number;
+  behavior?: string;
 }
 
 function photoTarget(state: GameState): PhotoTarget | null {
   const { diver, stats } = state;
   const range = photoRange(stats.camera);
-  const candidates: { species: string; x: number; y: number; calm: boolean }[] = [
-    ...state.sharks.filter((s) => !s.dying).map((s) => ({ species: s.kind as string, x: s.x, y: s.y, calm: s.mode === 'patrol' || s.mode === 'tired' })),
-    ...state.hazards.filter((h) => h.alive && PHOTO_HAZARDS.has(h.kind)).map((h) => ({ species: h.kind as string, x: h.x, y: h.y, calm: h.state === 0 })),
-    ...state.fish.map((f) => ({ species: f.sprite as string, x: f.x, y: f.y, calm: true })),
+  const candidates: { species: string; x: number; y: number; calm: boolean; behavior?: string }[] = [
+    ...state.sharks.filter((s) => !s.dying).map((s) => ({ species: s.kind as string, x: s.x, y: s.y, calm: s.mode === 'patrol' || s.mode === 'tired', behavior: sharkBehavior(s) })),
+    ...state.hazards
+      .filter((h) => h.alive && PHOTO_HAZARDS.has(h.kind) && (h.kind !== 'mimic' || h.state > 0) && (h.kind !== 'shadow' || h.state > 0))
+      .map((h) => ({ species: h.kind as string, x: h.x, y: h.y, calm: h.state === 0, behavior: hazardBehavior(h) })),
+    ...state.fish.map((f) => ({ species: f.sprite as string, x: f.x, y: f.y, calm: true, behavior: f.sprite === 'whale' || f.sprite === 'tidewarden_young' ? 'swim' : undefined })),
+    ...state.props.filter((p) => p.kind === 'vent' && p.active).map((p) => ({ species: 'vent', x: p.x, y: p.y - 40, calm: true, behavior: 'breath' })),
     ...state.props.filter((p) => p.kind === 'guardian').map((p) => ({ species: 'guardian', x: p.x, y: p.y, calm: p.active })),
   ];
   let best: (typeof candidates)[number] | null = null;
@@ -189,7 +238,7 @@ function photoTarget(state: GameState): PhotoTarget | null {
   if (!best) return null;
   const quality = bestD < range * 0.4 ? 3 : bestD < range * 0.7 ? 2 : 1;
   const stars = Math.max(1, Math.min(3, quality - (best.calm ? 0 : 1) + (stats.camera >= 3 ? 1 : 0)));
-  return { species: best.species, x: best.x, y: best.y, stars };
+  return { species: best.species, x: best.x, y: best.y, stars, behavior: best.behavior };
 }
 
 export const PHOTO_MODE_TIME = 10;
@@ -226,8 +275,11 @@ export function takePhoto(state: GameState) {
   const { stars } = best;
   const existing = state.record.photos.find((p) => p.species === best.species);
   state.events.push({ type: 'photo', species: best.species, stars, prev: existing?.stars ?? 0 });
-  if (existing) existing.stars = Math.max(existing.stars, stars);
-  else state.record.photos.push({ species: best.species, stars });
+  if (existing) {
+    existing.stars = Math.max(existing.stars, stars);
+    if (best.behavior) existing.behavior = best.behavior;
+  } else state.record.photos.push(best.behavior ? { species: best.species, stars, behavior: best.behavior } : { species: best.species, stars });
+  if (best.behavior && best.behavior !== 'swim' && best.behavior !== 'breath') floatText(state, 'Zachycené chování!', best.x, best.y - 84, '#AD65F5');
   floatText(state, `Foto ${stars}/3`, best.x, best.y - 60, '#FFFFFF');
   haptic(state, 'light');
 }
@@ -258,8 +310,14 @@ export function fireScooter(state: GameState) {
 export function launchBalloon(state: GameState) {
   const { diver } = state;
   if (state.phase !== 'dive' || diver.state !== 'diving' || diver.balloons <= 0 || diver.carried.length === 0) return;
+  const heavy = diver.carried[diver.carried.length - 1].kind === 'heavy';
+  if (heavy && diver.balloons < 2) {
+    floatText(state, 'Těžká truhla potřebuje 2 balóny', diver.x, diver.y - 50, '#A9C8EC');
+    return;
+  }
   const chest = diver.carried.pop()!;
-  diver.balloons -= 1;
+  diver.balloons -= heavy ? 2 : 1;
+  if (heavy) state.record.heavy += 1;
   state.record.balloonsSent += 1;
   state.balloons.push({ id: ++state.entityId, chest, x: diver.x, y: diver.y - 20, vx: 0, vy: -30, surfaced: false, phase: Math.random() * 6 });
   floatText(state, 'Balón vyslán!', diver.x, diver.y - 50, '#FF9A3C');

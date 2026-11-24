@@ -1,13 +1,32 @@
-import { DEFAULT_OCEAN, OCEAN_ORDER, type OceanId } from '../game/oceans';
+import type { KitCounts, MaterialCounts } from '../game/gear';
+import { DEFAULT_OCEAN, OCEAN_ORDER, WORLD_OCEANS, type OceanId } from '../game/oceans';
 import type { RelicId, SkinId, Supplies } from '../game/types';
 import { chapterOf, QUESTS, type QuestState } from './quests';
 import type { CharacterId } from './characters';
 import type { PerkLevels } from './expedition';
 import { EMPTY_LEVELS, type UpgradeLevels } from './upgrades';
+import type { ModId, ModSlot } from './crafting';
+import { EMPTY_REPUTATION, type Reputation } from './factions';
+import type { BoatModules, ModuleId } from './modules';
 
-export const SAVE_VERSION = 4;
+export const SAVE_VERSION = 5;
 
 export type Ending = 'guardian' | 'hidden' | 'power' | 'sacrifice';
+
+export type TideEnding = 'escort' | 'sleep' | 'harvest';
+
+export interface Rift {
+  id: string;
+  ocean: OceanId;
+  x: number;
+  left: number;
+}
+
+export interface HuntSpot {
+  ocean: OceanId;
+  x: number;
+  clue: string;
+}
 
 const OLD_ENDINGS: Record<string, Ending> = { destroy: 'sacrifice', hide: 'hidden', share: 'guardian' };
 
@@ -18,7 +37,7 @@ export interface SaveData {
   missionsDone: string[];
   missionProgress: Record<string, number>;
   stats: { dives: number; successes: number; totalEarned: number; bestDepth: number; chests: number };
-  settings: { music: boolean; sfx: boolean; haptics: boolean; markers: boolean };
+  settings: { music: boolean; sfx: boolean; haptics: boolean; markers: boolean; reduceMotion: boolean; slowTide: boolean; rarityShapes: boolean; bigText: boolean };
   tutorialSeen: boolean;
   relics: RelicId[];
   explored: { left: number; right: number };
@@ -45,6 +64,21 @@ export interface SaveData {
   flags: string[];
   pendingDialogs: string[];
   met: CharacterId[];
+  materials: MaterialCounts;
+  kit: KitCounts;
+  crafted: string[];
+  mods: { owned: ModId[]; equipped: Partial<Record<ModSlot, ModId>> };
+  modules: { owned: ModuleId[]; equipped: BoatModules };
+  reputation: Reputation;
+  contracts: { day: string; done: string[] };
+  rifts: { active: Rift[]; closed: number; seq: number };
+  shards: { pending: number; total: number };
+  hunt: { pieces: number; active: HuntSpot | null; found: number };
+  safari: { week: number; done: boolean };
+  weekly: { week: number; best: number; depth: number; rewarded: boolean };
+  aquarium: string[];
+  tideChapter: number;
+  tideEnding: TideEnding | null;
 }
 
 export const DEFAULT_SAVE: SaveData = {
@@ -54,7 +88,7 @@ export const DEFAULT_SAVE: SaveData = {
   missionsDone: [],
   missionProgress: {},
   stats: { dives: 0, successes: 0, totalEarned: 0, bestDepth: 0, chests: 0 },
-  settings: { music: true, sfx: true, haptics: true, markers: true },
+  settings: { music: true, sfx: true, haptics: true, markers: true, reduceMotion: false, slowTide: false, rarityShapes: false, bigText: false },
   tutorialSeen: false,
   relics: [],
   explored: { left: 0, right: 0 },
@@ -81,7 +115,28 @@ export const DEFAULT_SAVE: SaveData = {
   flags: [],
   pendingDialogs: ['prologue', 'brief:first_dive'],
   met: [],
+  materials: {},
+  kit: {},
+  crafted: [],
+  mods: { owned: [], equipped: {} },
+  modules: { owned: [], equipped: {} },
+  reputation: EMPTY_REPUTATION,
+  contracts: { day: '', done: [] },
+  rifts: { active: [], closed: 0, seq: 0 },
+  shards: { pending: 0, total: 0 },
+  hunt: { pieces: 0, active: null, found: 0 },
+  safari: { week: -1, done: false },
+  weekly: { week: -1, best: 0, depth: 0, rewarded: false },
+  aquarium: [],
+  tideChapter: 0,
+  tideEnding: null,
 };
+
+export const EXPANSION_FLAG = 'expansion';
+
+export function expansionIntro(ending: Ending): string[] {
+  return [`tide_intro_${ending}`, 'brief:tide_echo'];
+}
 
 
 type RawSave = Partial<SaveData> & { abyssBest?: number };
@@ -92,7 +147,9 @@ export function migrateSave(raw: unknown): SaveData {
   const { abyssBest, ...rest } = parsed;
   const version = parsed.version ?? 1;
   const chapter = version < 3 ? ((parsed.storyChapter ?? 0) >= 4 ? 1 : 0) : (parsed.storyChapter ?? 0);
-  const oceans = OCEAN_ORDER.filter((id) => (parsed.oceans ?? []).includes(id) || OCEAN_ORDER.indexOf(id) <= chapter);
+  const oceans = WORLD_OCEANS.filter((id) => (parsed.oceans ?? []).includes(id) || (OCEAN_ORDER.includes(id) && OCEAN_ORDER.indexOf(id) <= chapter));
+  const ending = parsed.ending ? (OLD_ENDINGS[parsed.ending] ?? parsed.ending) : null;
+  const expansionNew = version < 5 && !!ending;
   return {
     ...DEFAULT_SAVE,
     ...rest,
@@ -111,10 +168,25 @@ export function migrateSave(raw: unknown): SaveData {
     research: [...(parsed.research ?? [])],
     supplies: { ...DEFAULT_SAVE.supplies, ...parsed.supplies },
     quests: version < 4 ? legacyQuests(parsed.quests ?? {}, chapter) : { ...parsed.quests },
-    ending: parsed.ending ? (OLD_ENDINGS[parsed.ending] ?? parsed.ending) : null,
-    flags: [...(parsed.flags ?? [])],
-    pendingDialogs: version < 4 ? ['intro_existing', ...(chapter === 0 ? ['brief:first_dive'] : [])] : [...(parsed.pendingDialogs ?? [])],
+    ending,
+    flags: [...new Set([...(parsed.flags ?? []), ...(expansionNew ? [EXPANSION_FLAG] : [])])],
+    pendingDialogs: [...(version < 4 ? ['intro_existing', ...(chapter === 0 ? ['brief:first_dive'] : [])] : [...(parsed.pendingDialogs ?? [])]), ...(expansionNew && ending ? expansionIntro(ending) : [])],
     met: [...(parsed.met ?? [])],
+    materials: { ...parsed.materials },
+    kit: { ...parsed.kit },
+    crafted: [...(parsed.crafted ?? [])],
+    mods: { owned: [...(parsed.mods?.owned ?? [])], equipped: { ...parsed.mods?.equipped } },
+    modules: { owned: [...(parsed.modules?.owned ?? [])], equipped: { ...parsed.modules?.equipped } },
+    reputation: { ...EMPTY_REPUTATION, ...parsed.reputation },
+    contracts: { ...DEFAULT_SAVE.contracts, ...parsed.contracts },
+    rifts: { ...DEFAULT_SAVE.rifts, ...parsed.rifts },
+    shards: { ...DEFAULT_SAVE.shards, ...parsed.shards },
+    hunt: { ...DEFAULT_SAVE.hunt, ...parsed.hunt },
+    safari: { ...DEFAULT_SAVE.safari, ...parsed.safari },
+    weekly: { ...DEFAULT_SAVE.weekly, ...parsed.weekly },
+    aquarium: [...(parsed.aquarium ?? [])],
+    tideChapter: expansionNew ? 9 : (parsed.tideChapter ?? 0),
+    tideEnding: parsed.tideEnding ?? null,
   };
 }
 

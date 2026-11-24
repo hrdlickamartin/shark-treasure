@@ -6,25 +6,35 @@ import { floorAt, seabedY } from '../terrain';
 import type { ChestKind, DecorItem, GameState, Prop, PropSpec } from '../types';
 import { damageDiver } from './collision';
 import { burst, floatText, haptic, sfx } from './effects';
+import { MATERIALS, type MaterialId } from '../gear';
+import { GATE_LEVER_TIME } from './tide';
 
 export const PICKUP_RADIUS = 46;
 export const BEACON_RADIUS = 120;
 export const GUARDIAN_RADIUS = 170;
+export const RIFT_RADIUS = 260;
+export const VENT_CYCLE = 8;
+export const VENT_EXHALE = 3;
+export const VENT_HEIGHT = 320;
+export const DIG_REWARD = 2500;
 
-const CARRY = new Set(['fragment', 'survivor', 'artifact', 'vault']);
+const CARRY = new Set(['fragment', 'survivor', 'artifact', 'vault', 'shard', 'heartstone']);
 const SWITCHES = new Set(['lever', 'node', 'echo']);
 const SWITCH_LABEL: Record<string, string> = { lever: 'Páka', node: 'Uzel', echo: 'Signál' };
-const SURFACE = new Set(['cargo', 'merchant']);
+const SURFACE = new Set(['cargo', 'merchant', 'bottle']);
 
 const LABELS: Record<string, string> = {
   fragment: 'Fragment Srdce oceánu! Dopluj s ním k lodi',
   survivor: 'Trosečník se tě drží – zpátky k lodi!',
   artifact: 'Artefakt sebrán',
   vault: 'Poklad z komnaty!',
+  shard: 'Atlantský úlomek! Dopluj s ním k lodi',
+  heartstone: 'Srdeční kámen! Je těžký – opatrně k lodi',
 };
 
 export function propFromSpec(state: GameState, spec: PropSpec): Prop {
   const y = SURFACE.has(spec.kind) ? 2 : seabedY(state.seed, spec.x, oceanOf(state).regions) - spec.lift;
+  if (spec.kind === 'dig') return { ...spec, y, taken: false, progress: 0, phase: 0, active: false };
   return { ...spec, y, taken: false, progress: 0, phase: (spec.x % 7) + spec.lift };
 }
 
@@ -64,21 +74,147 @@ function sealedChest(state: GameState, prop: Prop) {
   state.chests.push({ id: `${prop.id}:chest`, kind, x: prop.x, y: restY - 30, restY, value, regionId: 0, falling: true, vy: 0, phase: 0, pickupDelay: 0.6, boss: false, inCave: false, relic: null, rolled: false });
 }
 
+export function ventExhaling(prop: Prop): boolean {
+  return prop.progress % VENT_CYCLE < VENT_EXHALE;
+}
+
+export function ventLift(state: GameState): Prop | null {
+  const { diver } = state;
+  return state.props.find((p) => p.kind === 'vent' && ventExhaling(p) && Math.abs(diver.x - p.x) < 42 && diver.y < p.y && diver.y > p.y - VENT_HEIGHT) ?? null;
+}
+
+export function riftAt(state: GameState, x: number, y: number): Prop | null {
+  return state.props.find((p) => p.kind === 'rift' && Math.hypot(x - p.x, y - p.y) < RIFT_RADIUS) ?? null;
+}
+
+export function inRift(state: GameState): boolean {
+  return state.diver.state === 'diving' && !!riftAt(state, state.diver.x, state.diver.y);
+}
+
+function pickMaterial(state: GameState, prop: Prop) {
+  const id = prop.tag as MaterialId;
+  prop.taken = true;
+  state.record.materials = { ...state.record.materials, [id]: (state.record.materials[id] ?? 0) + prop.value };
+  floatText(state, `+${prop.value} ${MATERIALS[id]?.name ?? 'materiál'}`, prop.x, prop.y - 40, '#FFBF32');
+  burst(state, 'spark', prop.x, prop.y, 8, 90, 0.5, 4);
+  sfx(state, 'collect', 0.6);
+  haptic(state, 'light');
+  if (!state.record.discoveries.includes('material')) {
+    state.record.discoveries.push('material');
+    state.events.push({ type: 'toast', text: 'Materiál! Z materiálů vyrobíš v dílně výbavu a moduly lodi.' });
+  }
+}
+
+function digUp(state: GameState, prop: Prop) {
+  prop.taken = true;
+  state.diver.cargo.push(prop.id);
+  const restY = floorAt(state, prop.x) - CHESTS.legendary.width * 0.32;
+  state.chests.push({ id: `${prop.id}:chest`, kind: 'legendary', x: prop.x, y: restY - 40, restY, value: DIG_REWARD, regionId: 0, falling: true, vy: -60, phase: 0, pickupDelay: 0.5, boss: false, inCave: false, relic: null, rolled: false });
+  burst(state, 'sand', prop.x, prop.y, 18, 140, 0.9, 5);
+  floatText(state, 'Poklad z mapy!', prop.x, prop.y - 60, '#FFBF32');
+  sfx(state, 'chest_open', 0.9);
+  haptic(state, 'success');
+}
+
+function updateVent(state: GameState, prop: Prop, dt: number) {
+  prop.progress += dt;
+  const exhale = ventExhaling(prop);
+  prop.active = exhale;
+  if (exhale && Math.random() < dt * 16) {
+    state.particles.push({ kind: 'bubble', x: prop.x + (Math.random() - 0.5) * 30, y: prop.y - 10, vx: (Math.random() - 0.5) * 16, vy: -120 - Math.random() * 80, life: 2, maxLife: 2, size: 4 + Math.random() * 6 });
+  }
+  const { diver } = state;
+  if (exhale && diver.state === 'diving' && Math.abs(diver.x - prop.x) < 42 && diver.y < prop.y && diver.y > prop.y - VENT_HEIGHT) diver.vy -= 90 * dt;
+}
+
+function updateRift(state: GameState, prop: Prop, dt: number) {
+  for (let i = state.chests.length - 1; i >= 0; i--) {
+    const chest = state.chests[i];
+    if (Math.hypot(chest.x - prop.x, chest.y - prop.y) > RIFT_RADIUS) continue;
+    chest.falling = false;
+    chest.y -= 22 * dt;
+    chest.x += Math.sin(chest.phase) * 8 * dt;
+    if (chest.y < prop.y - RIFT_RADIUS * 0.9) {
+      state.chests.splice(i, 1);
+      burst(state, 'spark', chest.x, chest.y, 10, 90, 0.6, 5);
+      floatText(state, 'Truhla zmizela v trhlině', chest.x, chest.y - 30, '#C8B6FF');
+    }
+  }
+  if (Math.random() < dt * 5) {
+    const a = Math.random() * Math.PI * 2;
+    state.particles.push({ kind: 'spark', x: prop.x + Math.cos(a) * RIFT_RADIUS * 0.8, y: prop.y + Math.sin(a) * RIFT_RADIUS * 0.8, vx: -Math.cos(a) * 60, vy: -Math.sin(a) * 60, life: 1.2, maxLife: 1.2, size: 4 });
+  }
+}
+
+function activateSwitch(state: GameState, prop: Prop): boolean {
+  if (!prop.tag) return false;
+  if (prop.tag.startsWith('gate:')) {
+    const gate = state.props.find((p) => p.id === prop.tag!.slice(5));
+    if (!gate || prop.progress > 0) return true;
+    gate.progress = GATE_LEVER_TIME;
+    prop.progress = GATE_LEVER_TIME;
+    floatText(state, `Brána otevřená na ${GATE_LEVER_TIME} s`, prop.x, prop.y - 50, '#20D4E8');
+    sfx(state, 'gate', 0.8);
+    haptic(state, 'light');
+    return true;
+  }
+  if (prop.tag === 'vortex') {
+    if (prop.active) return true;
+    prop.active = true;
+    const done = state.props.filter((p) => p.tag === 'vortex' && p.active).length;
+    floatText(state, `Brána víru ${done}/2 – okruh se zkracuje`, prop.x, prop.y - 50, '#20D4E8');
+    sfx(state, 'gate', 0.9);
+    haptic(state, 'light');
+    return true;
+  }
+  return false;
+}
+
+function cutChain(state: GameState, prop: Prop, dt: number, d: number) {
+  const { stats } = state;
+  if (d > PICKUP_RADIUS + 14) return;
+  if (stats.cutter <= 0) {
+    if (prop.progress <= 0) floatText(state, 'Řetěz – potřebuješ řezák', prop.x, prop.y - 50, '#A9C8EC');
+    prop.progress = Math.max(prop.progress, 0.001);
+    return;
+  }
+  prop.progress += dt / Math.max(0.6, 2 - stats.cutter * 0.5);
+  if (Math.random() < dt * 12) burst(state, 'spark', prop.x, prop.y - 10, 2, 90, 0.3, 3);
+  if (prop.progress < 1) return;
+  prop.taken = true;
+  state.record.cut += 1;
+  const left = state.props.filter((p) => p.kind === 'chain' && p.tag === prop.tag && !p.taken).length;
+  floatText(state, left ? `Řetěz přetnut – zbývá ${left}` : 'Ulita je volná!', prop.x, prop.y - 50, '#FFBF32');
+  sfx(state, 'chest_open', 0.8);
+  haptic(state, 'success');
+  if (!left) state.events.push({ type: 'toast', text: 'Řetězy povolily! Dutá ulita je zranitelná – zasáhni ji harpunou.' });
+}
+
 export function updateProps(state: GameState, dt: number) {
   const { diver, stats, boat } = state;
   const diving = state.phase === 'dive' && diver.state === 'diving';
   for (const prop of state.props) {
-    prop.phase += dt;
+    if (prop.kind !== 'gate') prop.phase += dt;
     if (prop.taken) continue;
     if (SURFACE.has(prop.kind)) {
       if (state.phase === 'boat' && Math.abs(boat.x - prop.x) < 80) {
         prop.taken = true;
         if (prop.kind === 'cargo') state.events.push({ type: 'cargo', value: prop.value });
+        else if (prop.kind === 'bottle') state.events.push({ type: 'bottle' });
         else state.events.push({ type: 'merchant' });
         sfx(state, 'coins', 0.8);
       }
       continue;
     }
+    if (prop.kind === 'vent') {
+      updateVent(state, prop, dt);
+      continue;
+    }
+    if (prop.kind === 'rift') {
+      updateRift(state, prop, dt);
+      continue;
+    }
+    if (prop.kind === 'gate') continue;
     const d = Math.hypot(diver.x - prop.x, diver.y - prop.y);
     if (prop.kind === 'guardian') {
       prop.progress = Math.max(0, prop.progress - dt);
@@ -91,7 +227,29 @@ export function updateProps(state: GameState, dt: number) {
       }
       continue;
     }
+    if (prop.kind === 'lever' && prop.tag?.startsWith('gate:')) {
+      const was = prop.progress;
+      prop.progress = Math.max(0, prop.progress - dt);
+      if (was > 0 && prop.progress <= 0) prop.active = false;
+    }
     if (!diving) continue;
+    if (prop.kind === 'chain') {
+      cutChain(state, prop, dt, d);
+      continue;
+    }
+    if (prop.kind === 'material') {
+      if (d < PICKUP_RADIUS) pickMaterial(state, prop);
+      continue;
+    }
+    if (prop.kind === 'dig') {
+      if (!prop.active && state.sonarTime > 0 && d < state.stats.sonarRange) {
+        prop.active = true;
+        floatText(state, 'Sonar: něco je zahrabané!', prop.x, prop.y - 50, '#FFBF32');
+      }
+      if (prop.active && d < PICKUP_RADIUS) digUp(state, prop);
+      continue;
+    }
+    if (prop.kind === 'scan') continue;
     if (prop.kind === 'sealed') {
       if (d > PICKUP_RADIUS + 14) {
         prop.active = false;
@@ -118,6 +276,10 @@ export function updateProps(state: GameState, dt: number) {
     }
     if (d > PICKUP_RADIUS) continue;
     if (SWITCHES.has(prop.kind)) {
+      if (activateSwitch(state, prop)) {
+        prop.active = true;
+        continue;
+      }
       if (prop.active) continue;
       prop.active = true;
       state.record.activated.push(prop.id);
@@ -155,7 +317,10 @@ export function nearBeacon(state: GameState): boolean {
 export function objectiveProps(state: GameState): Prop[] {
   return state.props.filter((p) => {
     if (p.taken) return false;
-    if (SWITCHES.has(p.kind)) return !p.active;
+    if (p.kind === 'scan') return !p.active && !!p.quest;
+    if (p.kind === 'shard') return true;
+    if (p.kind === 'dig') return true;
+    if (SWITCHES.has(p.kind)) return !!p.quest && !p.active;
     if (p.kind === 'vault') return p.active;
     return CARRY.has(p.kind);
   });

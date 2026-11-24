@@ -19,9 +19,10 @@ interface Props {
   onClose: () => void;
   width: number;
   height: number;
+  discount?: number;
 }
 
-export function UpgradeShop({ money, levels, expedition, onBuy, onBuySkin, skins, skin, onClose, width, height }: Props) {
+export function UpgradeShop({ money, levels, expedition, onBuy, onBuySkin, skins, skin, onClose, width, height, discount = 1 }: Props) {
   const [tab, setTab] = useState<'gear' | 'skins'>('gear');
   const columns = width > 900 ? 4 : width > 560 ? 2 : 1;
   const cardWidth = Math.min(220, (Math.min(width - 60, 960) - (columns - 1) * 10) / columns);
@@ -58,12 +59,12 @@ export function UpgradeShop({ money, levels, expedition, onBuy, onBuySkin, skins
                 </View>
               );
             })}
-          {tab === 'gear' && UPGRADES.map((def) => {
+          {tab === 'gear' && UPGRADES.filter((def) => !def.expansion || levels[def.id] > 0).map((def) => {
             const level = levels[def.id];
             const max = maxLevel(def, expedition);
             const open = unlocked(def, expedition);
             const maxed = level >= max;
-            const cost = upgradeCost(def, level);
+            const cost = Math.round(upgradeCost(def, level) * discount);
             const affordable = money >= cost;
             return (
               <View key={def.id} style={[styles.card, { width: cardWidth }, !open && styles.lockedCard]}>

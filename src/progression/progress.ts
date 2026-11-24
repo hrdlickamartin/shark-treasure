@@ -1,5 +1,9 @@
+import { addCounts, type MaterialCounts } from '../game/gear';
 import { todayKey } from '../game/modifiers';
-import { OCEAN_ORDER, type OceanId } from '../game/oceans';
+import { OCEAN_ORDER, weekIndex, type OceanId } from '../game/oceans';
+import { addReputation, FACTION_IDS } from './factions';
+import { equipped } from './modules';
+import { activeModules, applyTideDive, expansionOn, hasFlag } from './tides';
 import type { DiveResult, RelicId } from '../game/types';
 import type { CharacterId } from './characters';
 import { dialogueFor } from './dialogue';
@@ -31,6 +35,13 @@ export interface ResultSummary {
   chapter: number | null;
   ending: boolean;
   newRelics: RelicId[];
+  materials: MaterialCounts;
+  materialsLost: MaterialCounts;
+  contracts: string[];
+  safari: boolean;
+  weekly: boolean;
+  hunt: boolean;
+  shards: number;
 }
 
 export interface Settlement {
@@ -53,13 +64,43 @@ function speakers(ids: string[]): CharacterId[] {
   return ids.flatMap((id) => dialogueFor(id)?.lines.map((l) => l.who) ?? []);
 }
 
-export function settle(before: SaveData, quests: Record<string, SaveData['quests'][string]>): Settlement {
+function metaGoalDone(save: SaveData, quest: QuestDef, goal: QuestDef['steps'][number]): boolean {
+  if (goal.kind === 'reputation') {
+    if (goal.faction) return save.reputation[goal.faction] >= goal.points;
+    return FACTION_IDS.filter((f) => save.reputation[f] >= goal.points).length >= (goal.factions ?? 1);
+  }
+  if (goal.kind === 'craft') return save.crafted.length > 0;
+  if (goal.kind === 'rifts') return save.rifts.closed >= goal.count;
+  return false;
+}
+
+function metaProgress(save: SaveData, quests: Record<string, SaveData['quests'][string]>): Record<string, SaveData['quests'][string]> {
+  const next = { ...quests };
+  for (const quest of activeQuests(quests, save.oceans, save.flags)) {
+    const state = next[quest.id] ?? EMPTY_QUEST;
+    const flags = new Set(state.flags);
+    quest.steps.forEach((goal, i) => {
+      if (!flags.has(stepKey(quest.id, i)) && metaGoalDone(save, quest, goal)) flags.add(stepKey(quest.id, i));
+    });
+    if (flags.size === state.flags.length) continue;
+    next[quest.id] = { ...state, flags: [...flags], done: quest.steps.every((_, i) => flags.has(stepKey(quest.id, i))) };
+  }
+  return next;
+}
+
+export function settle(before: SaveData, incoming: Record<string, SaveData['quests'][string]>): Settlement {
+  const quests = metaProgress(before, incoming);
   const completed = Object.keys(quests)
     .filter((id) => quests[id].done && !before.quests[id]?.done)
     .map((id) => questById(id))
     .filter((q): q is QuestDef => !!q);
   let storyChapter = before.storyChapter;
+  let tideChapter = before.tideChapter;
   const flags = new Set(before.flags);
+  const unlockedOceans: OceanId[] = [];
+  let materials = before.materials;
+  let kit = before.kit;
+  let reputation = before.reputation;
   const upgrades = { ...before.upgrades };
   let money = 0;
   let xp = 0;
@@ -76,13 +117,20 @@ export function settle(before: SaveData, quests: Record<string, SaveData['quests
       const def = UPGRADES.find((u) => u.id === quest.reward.upgrade!.id)!;
       upgrades[def.id] = Math.min(maxLevel(def, before.expedition), upgrades[def.id] + quest.reward.upgrade.levels);
     }
+    if (quest.reward.materials) materials = addCounts(materials, quest.reward.materials);
+    if (quest.reward.kit) kit = addCounts(kit, quest.reward.kit);
+    if (quest.reward.reputation) reputation = addReputation(reputation, quest.reward.reputation.faction, quest.reward.reputation.amount);
+    if (quest.unlocks) unlockedOceans.push(quest.unlocks);
     dialogs.push(`debrief:${quest.id}`);
-    if (quest.chapterEnd) {
+    if (quest.chapterEnd && quest.chapter) {
+      tideChapter = Math.max(tideChapter, quest.chapter + 1);
+      dialogs.push(`tide_hook_${chapterOf(quest)}`);
+    } else if (quest.chapterEnd) {
       storyChapter = Math.max(storyChapter, chapterOf(quest) + 1);
       dialogs.push(`hook_${chapterOf(quest)}`);
     }
   }
-  const oceans = [...new Set([...before.oceans, ...oceansAfter(storyChapter)])];
+  const oceans = [...new Set([...before.oceans, ...oceansAfter(storyChapter), ...unlockedOceans])];
   const flagList = [...flags];
   const wasActive = new Set(activeQuests(before.quests, before.oceans, before.flags).map((q) => q.id));
   const nowActive = activeQuests(quests, oceans, flagList);
@@ -94,9 +142,13 @@ export function settle(before: SaveData, quests: Record<string, SaveData['quests
     ...before,
     quests,
     storyChapter,
+    tideChapter,
     oceans,
     flags: flagList,
     upgrades,
+    materials,
+    kit,
+    reputation,
     money: before.money + money,
     xp: before.xp + xp,
     researchData: before.researchData + research,
@@ -152,7 +204,8 @@ export function applyDive(current: SaveData, result: DiveResult): { save: SaveDa
       chests: current.stats.chests + (result.success ? result.chests.length : 0),
     },
   };
-  const settled = settle(base, quests);
+  const tide = expansionOn(current) ? applyTideDive(base, result, todayKey(), weekIndex(), equipped(activeModules(current), 'aquarium')) : null;
+  const settled = settle(tide ? tide.save : base, quests);
   const beforeLevel = explorerLevel(current.xp);
   const afterLevel = explorerLevel(settled.save.xp);
   const levelUps = Array.from({ length: afterLevel - beforeLevel }, (_, i) => beforeLevel + i + 1);
@@ -185,14 +238,25 @@ export function applyDive(current: SaveData, result: DiveResult): { save: SaveDa
       levelReward: levelMoney,
       unlocked: settled.unlocked,
       chapter: main ? chapterOf(main) : null,
-      ending: !!main && save.storyChapter >= CHAPTER_COUNT && !current.ending,
+      ending: !!main && !main.chapter && save.storyChapter >= CHAPTER_COUNT && !current.ending,
       newRelics,
+      materials: result.materials,
+      materialsLost: result.materialsLost,
+      contracts: tide?.contracts ?? [],
+      safari: tide?.safari ?? false,
+      weekly: tide?.weekly ?? false,
+      hunt: tide?.hunt ?? false,
+      shards: tide?.shards ?? 0,
     },
   };
 }
 
 export function choiceAvailable(save: SaveData, needs?: string[]): boolean {
-  return !needs || needs.every((f) => save.flags.includes(f));
+  return !needs || needs.every((f) => hasFlag(save, f));
+}
+
+export function resettle(save: SaveData): SaveData {
+  return settle(save, save.quests).save;
 }
 
 export function applyChoice(current: SaveData, questId: string, optionId: string): Settlement | null {

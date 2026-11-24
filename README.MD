@@ -855,10 +855,10 @@ Právě tohle rozhodování mezi riskováním, odměnou a bezpečným návratem 
 ```bash
 npm install
 npx expo start          # Expo Go na telefonu (naskenuj QR kód)
-npx expo start --web    # hra v prohlížeči (WASD / šipky, mezerník = ponor / sonar, Esc = pauza)
+npx expo start --web    # hra v prohlížeči (WASD / šipky, mezerník = ponor / sonar, Esc = pauza, G = Pip, Q = výbava, X = přepnout výbavu, funguje i gamepad)
 ```
 
-Kontroly: `npx tsc --noEmit`, `npx expo lint`.
+Kontroly: `npm run check` (typy, lint, testy enginu, fonty, assety).
 
 ## Struktura
 
@@ -897,3 +897,11 @@ Kontroly: `npx tsc --noEmit`, `npx expo lint`.
 - **Výzva dne**: jednou denně ponor s modifikátorem a vyšší odměnou.
 - **Deník**: úkoly podle kategorií se splněnými, posádka a vztah s Mayou, katalog, výzkum, mise a sbírka (relikvie, lokace); během ponoru minimapa a jedna šipka k nejbližšímu cíli.
 - **Vzhled**: barevné neopreny v obchodě (`python3 tools/assets/assets.py derive`).
+- **The Living Tides – Živé proudy** (rozšíření po konci kampaně podle `Shark_Treasure_The_Living_Tides_Rozsireni.pdf`, plán v `docs/living-tides.md`): kapitoly 9–12 s úvodem podle zvoleného konce, postavy Jun, Harlan a dron Pip, dva nové oceány (Úžina proudů s přílivem, branami a Vládcem proudů; Putující útes s dýchacími průduchy, hroutícími se dutinami a Dutou ulitou) a trhliny Srdce ve všech osmi oceánech. Tři konce rozšíření (Doprovod, Spánek, Sklizeň).
+- **Příliv a odliv** (`src/game/systems/tide.ts`): každý oceán dýchá v cyklu, v Úžině se proudy otáčejí a přílivové brány se za odlivu zavírají (páka je otevře na 20 s); ukazatel přílivu v HUD, mlhový roh 8 s předem.
+- **Dron Pip** (`src/game/systems/drone.ts`, klávesa G): průzkum a odhalení truhel i mimikry chobotnic, na 2. úrovni donese materiál nebo mince, na 3. skenuje tvory do katalogu; žralok ho na chvíli vyřadí.
+- **Nové mechaniky**: hroutící se jeskyně s odpočtem a padajícími bloky (`collapse.ts`), těžké truhly na 2 místa (2 balóny, jeřáb nebo vlečné lano), mimikry chobotnice, barakudí hejna, řetězové medúzy, krevetky pistolníci a trhlinové stíny (`fauna.ts`), bossové s puzzlem (`bosses.ts`).
+- **Materiály, dílna a moduly lodi** (`src/progression/crafting.ts`, `modules.ts`, obrazovka Přístav): 7 materiálů, 22 receptů (spotřební výbava, modifikace nádrže, ploutví, obleku, harpuny a Pipa), 8 modulů v 6 slotech viditelných na lodi (jeřáb, potápěčský zvon, akvárium, laboratoř, plachta, rádiová věž, dekompresní komora, trofejní síň).
+- **Frakce** (`src/progression/factions.ts`): Přístavní cech, Oceánský institut, Bratrstvo volných potápěčů a Tidewatch s reputací v 5 úrovních, denními zakázkami a volbou, komu předat atlantský úlomek (soupeřící frakce ztrácí reputaci).
+- **Režimy rozšíření** (`src/ui/Modes.tsx`): volný průzkum bez kyslíkového limitu, týdenní expedice s pevným světem, legendární expedice (odvety s bossy), lov pokladů podle map v lahvi a týdenní fotosafari se zachycením chování.
+- **Přístupnost**: méně pohybu, pomalejší příliv, tvary rarity truhel, větší text dialogů; ovládání gamepadem na webu.

@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
-import { OCEAN_ORDER, OCEANS } from '../game/oceans';
-import { SPECIES } from '../progression/encyclopedia';
+import { OCEAN_ORDER, OCEANS, WORLD_OCEANS } from '../game/oceans';
+import { MATERIAL_IDS, MATERIALS } from '../game/gear';
+import { SPECIES, speciesById } from '../progression/encyclopedia';
 import { expeditionScale } from '../progression/expedition';
 import { activeMissions, MISSIONS } from '../progression/missions';
 import { CHARACTERS, MAYA_PHASES, type CharacterId } from '../progression/characters';
@@ -9,7 +10,7 @@ import { activeQuests, CATEGORY_LABEL, CHAPTER_COUNT, EMPTY_QUEST, QUESTS, stepK
 import { RELICS, SET_BONUS } from '../progression/relics';
 import { canResearch, explorerLevel, levelXp, RESEARCH } from '../progression/research';
 import type { SaveData } from '../progression/saveData';
-import { ENDINGS } from '../progression/story';
+import { ENDINGS, TIDE_ENDINGS } from '../progression/story';
 import { Icon } from '../render/Sprite';
 import { GameButton } from './Button';
 import { Overlay, Panel, Title } from './Panel';
@@ -85,6 +86,11 @@ function Quests({ save }: { save: SaveData }) {
         Kapitola {Math.min(save.storyChapter + 1, CHAPTER_COUNT)}/{CHAPTER_COUNT}: {OCEANS[OCEAN_ORDER[chapter]].czech}
         {save.ending ? ` • Konec: ${ENDINGS[save.ending].title}` : ''}
       </Text>
+      {save.flags.includes('expansion') && (
+        <Text style={styles.note}>
+          Živé proudy: kapitola {Math.min(save.tideChapter, 12)}/12{save.tideEnding ? ` • Konec: ${TIDE_ENDINGS[save.tideEnding].title}` : ''}
+        </Text>
+      )}
       {(Object.keys(CATEGORY_LABEL) as QuestCategory[]).map((category) => {
         const list = active.filter((q) => q.category === category);
         if (!list.length) return null;
@@ -238,8 +244,28 @@ function Collection({ save, cardWidth }: { save: SaveData; cardWidth: number }) 
         })}
       </View>
       <Text style={styles.note}>Kompletní sada přidá +{Math.round(SET_BONUS * 100)} % ke všem pokladům.</Text>
+      {save.flags.includes('expansion') && (
+        <>
+          <Text style={styles.section}>Materiály a úlomky</Text>
+          <View style={styles.grid}>
+            {MATERIAL_IDS.map((id) => (
+              <View key={id} style={[styles.tile, { width: cardWidth }, (save.materials[id] ?? 0) > 0 && styles.tileOn]}>
+                <Icon name={MATERIALS[id].sprite} size={36} />
+                <Text style={styles.tileName}>
+                  {MATERIALS[id].name} ×{save.materials[id] ?? 0}
+                </Text>
+                <Text style={styles.tileSub}>{MATERIALS[id].source}</Text>
+              </View>
+            ))}
+          </View>
+          <Text style={styles.note}>
+            Atlantské úlomky celkem: {save.shards.total} • uzavřené trhliny: {save.rifts.closed} • poklady z map: {save.hunt.found}
+          </Text>
+          {save.aquarium.length > 0 && <Text style={styles.note}>Akvárium: {save.aquarium.map((id) => speciesById(id)?.name ?? id).join(', ')}</Text>}
+        </>
+      )}
       <Text style={styles.section}>Objevené lokace</Text>
-      {OCEAN_ORDER.map((id) => {
+      {WORLD_OCEANS.map((id) => {
         const ocean = OCEANS[id];
         const found = ocean.regions.filter((r) => save.discoveries.includes(`loc:${id}:${r.id}`));
         if (!save.oceans.includes(id)) return null;

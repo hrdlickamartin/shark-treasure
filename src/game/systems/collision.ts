@@ -5,7 +5,13 @@ import { burst, floatText, haptic, sfx, shake } from './effects';
 export function damageDiver(state: GameState, amount: number, source: DamageSource, fromX: number, fromY: number, dropChest: boolean) {
   const { diver, stats } = state;
   if (diver.invuln > 0 || diver.state !== 'diving') return false;
-  const dealt = amount * stats.danger * (1 - stats.armor);
+  if (diver.immune > 0 && (source === 'jelly' || source === 'siphon' || source === 'toxic')) return false;
+  let dealt = amount * stats.danger * (1 - stats.armor) * (source === 'shadow' && stats.riftArmor ? 0.5 : 1);
+  if (stats.deflect && !diver.deflectUsed) {
+    diver.deflectUsed = true;
+    dealt *= 0.5;
+    floatText(state, 'Odrazová vrstva!', diver.x, diver.y - 70, '#20D4E8');
+  }
   diver.health -= dealt;
   diver.oxygen = Math.max(0, diver.oxygen - (source === 'shark' ? 5 : 3));
   diver.invuln = 1.4;

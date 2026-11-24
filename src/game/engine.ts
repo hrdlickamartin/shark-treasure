@@ -9,7 +9,13 @@ import { updateOxygen } from './systems/oxygen';
 import { updateTreasure } from './systems/treasure';
 import { CHALLENGES, rollCondition } from './modifiers';
 import { updateExtras } from './systems/extras';
-import type { ChallengeId, GameMode, PropSpec, Supplies, Condition, GameEvent, GameState, Input, RelicId, SkinId, Stats, View } from './types';
+import type { BoatDecor, ChallengeId, GameMode, GameVariant, PropSpec, Supplies, Condition, GameEvent, GameState, Input, RelicId, SkinId, Stats, View } from './types';
+import type { KitCounts } from './gear';
+import { updateTide } from './systems/tide';
+import { updateDrone } from './systems/drone';
+import { updateCollapse } from './systems/collapse';
+import { updateMarkers } from './systems/kit';
+import { newDrone, newRecord } from './records';
 import { ensureShaft, updateShaft } from './endless';
 import { DEFAULT_OCEAN, type OceanId } from './oceans';
 import { propFromSpec, updateProps } from './systems/props';
@@ -35,6 +41,14 @@ export interface WorldOptions {
   shaftBest?: number;
   props?: PropSpec[];
   supplies?: Supplies;
+  expansion?: boolean;
+  variant?: GameVariant;
+  kit?: KitCounts;
+  seed?: number;
+  tideScale?: number;
+  reduceMotion?: boolean;
+  boatDecor?: BoatDecor[];
+  rarityShapes?: boolean;
 }
 
 const DEFAULT_OPTIONS: WorldOptions = { ownedRelics: [], skin: 'classic', challenge: null, calm: true };
@@ -50,7 +64,7 @@ export function createGame(stats: Stats, view: View, boatX = 0, options: WorldOp
     airs: [],
     shaftBest: options.shaftBest ?? 0,
     shaftMark: 0,
-    seed: newSeed(),
+    seed: options.seed ?? newSeed(),
     time: 0,
     phase: 'boat',
     diver: {
@@ -79,6 +93,15 @@ export function createGame(stats: Stats, view: View, boatX = 0, options: WorldOp
       temp: 100,
       breathing: true,
       inAir: false,
+      kit: { ...(options.kit ?? {}) },
+      anchor: 0,
+      immune: 0,
+      tow: false,
+      reserveUsed: false,
+      deflectUsed: false,
+      canisterUsed: false,
+      bellUsed: false,
+      turnBoost: 0,
     },
     boat: { x: boatX, vx: 0, lockedNotice: 0, facing: 1, shown: 1, reverse: 0, turnFx: 0 },
     camera: { x: boatX, y: -view.height * 0.42, shake: 0, offsetX: 0, offsetY: 0 },
@@ -91,7 +114,7 @@ export function createGame(stats: Stats, view: View, boatX = 0, options: WorldOp
     fish: [],
     particles: [],
     texts: [],
-    record: { startTime: 0, maxDepth: 0, hits: 0, regionMax: 0, fullWarned: -10, pockets: 0, balloonsSent: 0, minX: boatX, maxX: boatX, discoveries: [], photos: [], activated: [], cut: 0 },
+    record: newRecord(0, boatX, 0),
     stats,
     sonarTime: 0,
     sonarCooldown: 0,
@@ -124,6 +147,20 @@ export function createGame(stats: Stats, view: View, boatX = 0, options: WorldOp
     skin: options.skin,
     seenChests: [],
     entityId: 0,
+    variant: options.variant ?? 'normal',
+    expansion: !!options.expansion,
+    tideScale: options.tideScale ?? 1,
+    tideHigh: true,
+    tideWarned: false,
+    drone: newDrone(boatX, BOAT_DECK_Y),
+    collapse: null,
+    rocks: [],
+    markers: [],
+    revealed: [],
+    kitSlot: 0,
+    reduceMotion: !!options.reduceMotion,
+    boatDecor: options.boatDecor ?? [],
+    rarityShapes: !!options.rarityShapes,
   };
   if (mode === 'sea') state.props = (options.props ?? []).map((spec) => propFromSpec(state, spec));
   ensureWorld(state, view);
@@ -162,8 +199,12 @@ export function step(state: GameState, input: Input, rawDt: number, view: View):
     updateTreasure(state, dt);
   }
 
+  updateTide(state, dt);
   updateEnemies(state, dt);
   updateProps(state, dt);
+  updateDrone(state, dt);
+  updateCollapse(state, dt);
+  updateMarkers(state, dt);
   updateExtras(state, dt);
   updateAmbient(state, dt);
   updateAnimation(state, dt);

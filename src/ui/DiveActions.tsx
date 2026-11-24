@@ -1,6 +1,8 @@
 import { StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { MAX_HEALTH } from '../game/constants';
 import type { GameState } from '../game/types';
+import { KIT } from '../game/gear';
+import { availableKit, selectedKit } from '../game/systems/kit';
 import { Icon } from '../render/Sprite';
 import type { SpriteName } from '../render/spriteAssets';
 import { COLORS, FONTS, textShadow } from './theme';
@@ -18,6 +20,9 @@ interface Props {
   onHarpoon: () => void;
   onCamera: () => void;
   onShutter: () => void;
+  onPip: () => void;
+  onKit: () => void;
+  onKitCycle: () => void;
 }
 
 const BOX = 270;
@@ -35,6 +40,9 @@ const GRID: [number, number][] = [
   [0, -2],
   [-1.1, -2],
   [0, -2.92],
+  [-1.1, -2.92],
+  [0, -3.84],
+  [-1.1, -3.84],
 ];
 
 interface Slot {
@@ -89,11 +97,13 @@ export const actionsScale = (width: number, height: number) => Math.max(0.78, Ma
 
 export const actionsWidth = (width: number, height: number) => (height > width ? (MAIN + TOUCH_PAD * 2 + STEP * 1.1) * actionsScale(width, height) : BOX * actionsScale(width, height));
 
-export function DiveActions({ state, right, bottom, onSonar, onBalloon, onRepellent, onMedkit, onScooter, onHarpoon, onCamera, onShutter }: Props) {
+export function DiveActions({ state, right, bottom, onSonar, onBalloon, onRepellent, onMedkit, onScooter, onHarpoon, onCamera, onShutter, onPip, onKit, onKitCycle }: Props) {
   const { width, height } = useWindowDimensions();
   const scale = actionsScale(width, height);
   const { diver, stats } = state;
   const hurt = diver.health < MAX_HEALTH;
+  const kitId = selectedKit(state);
+  const kitKinds = availableKit(state).length;
   const shooting = state.photoMode > 0;
   const slots: Slot[] = [
     { key: 'scooter', icon: 'icon_scooter', angle: 180, radius: INNER, visible: stats.scooter > 0, ready: state.boostCooldown <= 0, cooldown: state.boostCooldown, onFire: onScooter },
@@ -102,6 +112,8 @@ export function DiveActions({ state, right, bottom, onSonar, onBalloon, onRepell
     { key: 'medkit', icon: 'icon_medkit', angle: 90, radius: INNER, visible: diver.medkits > 0 && hurt, ready: true, count: diver.medkits, urgent: diver.health < 40, onFire: onMedkit },
     { key: 'camera', icon: 'icon_camera', angle: 165, radius: OUTER, visible: stats.camera > 0, ready: true, active: shooting, onFire: onCamera },
     { key: 'balloon', icon: 'balloon', angle: 115, radius: OUTER, visible: diver.balloons > 0 && diver.carried.length > 0, ready: true, count: diver.balloons, onFire: onBalloon },
+    { key: 'pip', icon: 'icon_pip', angle: 140, radius: OUTER, visible: stats.drone > 0, ready: state.drone.mode !== 'off' && (state.drone.mode !== 'dock' || state.drone.cooldown <= 0), active: state.drone.mode === 'out' || state.drone.mode === 'scout' || state.drone.mode === 'return', cooldown: state.drone.mode === 'dock' ? state.drone.cooldown : 0, onFire: onPip },
+    { key: 'kit', icon: kitId ? KIT[kitId].icon : 'icon_workshop', angle: 90, radius: OUTER, visible: !!kitId, ready: true, count: kitId ? diver.kit[kitId] : 0, onFire: onKit },
   ];
   const portrait = height > width;
   const sonarShown = shooting || stats.sonarRange > 0;
@@ -127,7 +139,10 @@ export function DiveActions({ state, right, bottom, onSonar, onBalloon, onRepell
         const a = (slot.angle * Math.PI) / 180;
         const cell = grid.get(slot.key);
         const [dx, dy] = portrait && cell ? [cell[0] * STEP, cell[1] * STEP] : [Math.cos(a) * slot.radius, -Math.sin(a) * slot.radius];
-        return <ActionButton key={slot.key} slot={slot} size={SMALL * scale} cx={cx + dx * scale} cy={cy + dy * scale} />;
+        const button = <ActionButton key={slot.key} slot={slot} size={SMALL * scale} cx={cx + dx * scale} cy={cy + dy * scale} />;
+        if (slot.key !== 'kit' || kitKinds < 2) return button;
+        const cycle: Slot = { key: 'cycle', icon: 'icon_workshop', angle: 0, radius: 0, visible: true, ready: true, onFire: onKitCycle };
+        return [button, <ActionButton key="cycle" slot={cycle} size={SMALL * 0.55 * scale} cx={cx + dx * scale - SMALL * 0.62 * scale} cy={cy + dy * scale - SMALL * 0.5 * scale} />];
       })}
       {sonar.visible && <ActionButton slot={sonar} size={MAIN * scale} cx={cx} cy={cy} />}
     </View>

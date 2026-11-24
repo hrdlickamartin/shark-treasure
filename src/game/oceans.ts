@@ -1,9 +1,10 @@
 import type { BackgroundName } from '../render/spriteAssets';
 import { CHUNK_W } from './constants';
+import type { MaterialCounts } from './gear';
 import type { Region } from './regions';
 import type { SharkKind } from './types';
 
-export type OceanId = 'caribbean' | 'arctic' | 'mediterranean' | 'pacific' | 'atlantis' | 'abyss' | 'graveyard' | 'volcanic';
+export type OceanId = 'caribbean' | 'arctic' | 'mediterranean' | 'pacific' | 'atlantis' | 'abyss' | 'graveyard' | 'volcanic' | 'riptide' | 'wandering';
 
 export type Temperature = 'cold' | 'heat';
 export type Puzzle = 'levers' | 'nodes';
@@ -36,6 +37,14 @@ export interface OceanDef {
   recommended: { pressure: number; thermal: number; light: number; cutter: number };
   map: { x: number; y: number };
   water: string;
+  materials: MaterialCounts;
+  tide?: { period: number; strength: number };
+  moving?: boolean;
+  vents?: boolean;
+  mimics?: number;
+  heavy?: number;
+  unstable?: number;
+  expansion?: boolean;
 }
 
 const STARTS = [0, 1600, 3300, 5200, 7200, 9400];
@@ -53,6 +62,9 @@ const DEEP = ['glow_coral', 'glow_coral', 'rock_big', 'kelp', 'rock_small', 'cor
 const RUST = ['rock_big', 'kelp', 'seaweed', 'rock_small', 'kelp'];
 const MAGMA = ['lava_vent', 'rock_big', 'rock_small', 'cave_crystal', 'rock_big'];
 const GLOW_FRONT = ['glow_coral', 'rock_small'];
+const STRAIT = ['rock_big', 'rock_small', 'kelp', 'seaweed', 'rock_big', 'coral_orange'];
+const SHELL = ['coral_pink', 'coral_purple', 'seaweed', 'coral_pink', 'glow_coral', 'kelp', 'coral_orange'];
+const SHELL_FRONT = ['coral_pink', 'seaweed', 'coral_purple'];
 
 export const OCEANS: Record<OceanId, OceanDef> = {
   caribbean: {
@@ -81,6 +93,7 @@ export const OCEANS: Record<OceanId, OceanDef> = {
     recommended: { pressure: 1, thermal: 0, light: 0, cutter: 0 },
     map: { x: 0.17, y: 0.27 },
     water: '#0A5FB0',
+    materials: { scrap: 3, rope: 3, nacre: 1 },
   },
   arctic: {
     id: 'arctic',
@@ -109,6 +122,7 @@ export const OCEANS: Record<OceanId, OceanDef> = {
     recommended: { pressure: 2, thermal: 1, light: 1, cutter: 0 },
     map: { x: 0.47, y: 0.13 },
     water: '#3E7FB8',
+    materials: { ice: 4, scrap: 1 },
   },
   mediterranean: {
     id: 'mediterranean',
@@ -137,6 +151,7 @@ export const OCEANS: Record<OceanId, OceanDef> = {
     recommended: { pressure: 2, thermal: 0, light: 0, cutter: 0 },
     map: { x: 0.75, y: 0.22 },
     water: '#1D8FC9',
+    materials: { rope: 2, nacre: 2, scrap: 1 },
   },
   pacific: {
     id: 'pacific',
@@ -164,6 +179,7 @@ export const OCEANS: Record<OceanId, OceanDef> = {
     recommended: { pressure: 2, thermal: 0, light: 1, cutter: 0 },
     map: { x: 0.42, y: 0.55 },
     water: '#0C6FC4',
+    materials: { nacre: 4, rope: 1 },
   },
   atlantis: {
     id: 'atlantis',
@@ -194,6 +210,7 @@ export const OCEANS: Record<OceanId, OceanDef> = {
     recommended: { pressure: 4, thermal: 0, light: 2, cutter: 0 },
     map: { x: 0.6, y: 0.8 },
     water: '#123A78',
+    materials: { alloy: 1, nacre: 2, biogel: 1 },
   },
   abyss: {
     id: 'abyss',
@@ -221,6 +238,7 @@ export const OCEANS: Record<OceanId, OceanDef> = {
     recommended: { pressure: 6, thermal: 0, light: 3, cutter: 0 },
     map: { x: 0.42, y: 0.9 },
     water: '#0A1E4A',
+    materials: { biogel: 4, scrap: 1 },
   },
   graveyard: {
     id: 'graveyard',
@@ -249,6 +267,7 @@ export const OCEANS: Record<OceanId, OceanDef> = {
     recommended: { pressure: 4, thermal: 0, light: 2, cutter: 1 },
     map: { x: 0.17, y: 0.78 },
     water: '#2E5560',
+    materials: { scrap: 4, rope: 2 },
   },
   volcanic: {
     id: 'volcanic',
@@ -273,10 +292,104 @@ export const OCEANS: Record<OceanId, OceanDef> = {
     recommended: { pressure: 5, thermal: 3, light: 2, cutter: 0 },
     map: { x: 0.87, y: 0.6 },
     water: '#3A1A14',
+    materials: { obsidian: 4, scrap: 1 },
+  },
+  riptide: {
+    id: 'riptide',
+    name: 'Riptide Straits',
+    czech: 'Úžina proudů',
+    subtitle: 'Řeka v oceánu, přílivové brány a Vládce proudů',
+    port: 'Kotviště Tern',
+    mechanic: 'Příliv: proudy se každých 30 s otočí a zesílí. Přílivové brány jsou otevřené jen při přílivu nebo po zatažení páky.',
+    regions: zones([
+      { name: 'Kotviště Tern', subtitle: 'Plovoucí molo frakcí', baseDepth: 260, amplitude: 50, sand: '#B9B4A8', sandDark: '#8F887C', sandEdge: '#5F594F', tier: 2, decor: STRAIT, landmarks: [], caves: false },
+      { name: 'Závodní kanál', subtitle: 'Rovný kanál se silným proudem', baseDepth: 420, amplitude: 60, sand: '#AFA99C', sandDark: '#857E71', sandEdge: '#574F44', tier: 3, decor: STRAIT, landmarks: [{ decor: 'wreck', chance: 0.25 }], caves: false },
+      { name: 'Přílivové brány', subtitle: 'Atlantská stavidla', baseDepth: 560, amplitude: 90, sand: '#A49E92', sandDark: '#7A7367', sandEdge: '#4E473D', tier: 3, decor: STRAIT, landmarks: [{ decor: 'ruins', chance: 0.3 }], caves: true, caveChance: 0.2 },
+      { name: 'Barakudí rokle', subtitle: 'Hejna v liniích', baseDepth: 760, amplitude: 130, sand: '#958F84', sandDark: '#6C665C', sandEdge: '#433E36', tier: 4, decor: STRAIT, landmarks: [], caves: true, caveChance: 0.3 },
+      { name: 'Vírová pánev', subtitle: 'Vraky v kruhovém proudu', baseDepth: 880, amplitude: 110, sand: '#8A847A', sandDark: '#625C53', sandEdge: '#3D3832', tier: 4, decor: STRAIT, landmarks: [{ decor: 'wreck', chance: 0.55 }], caves: false },
+      { name: 'Oko víru', subtitle: 'Doupě Vládce proudů', baseDepth: 1000, amplitude: 120, sand: '#7A756C', sandDark: '#55504A', sandEdge: '#34302B', tier: 5, decor: ['rock_big', 'rock_small', 'kelp'], landmarks: [{ decor: 'ruins', chance: 0.4 }], caves: false },
+    ]),
+    backgrounds: [
+      { name: 'bg_riptide', depth: 0 },
+      { name: 'bg_trench', depth: 100 },
+    ],
+    bossRegion: 5,
+    boss: 'maelstrom',
+    sharks: { reef: 40, hammer: 35, great: 25 },
+    currents: 2.4,
+    tide: { period: 60, strength: 1 },
+    recommended: { pressure: 2, thermal: 0, light: 0, cutter: 0 },
+    map: { x: 0.64, y: 0.43 },
+    water: '#1E6C9C',
+    materials: { rope: 3, scrap: 3, nacre: 2 },
+    heavy: 0.12,
+    unstable: 0.3,
+    expansion: true,
+  },
+  wandering: {
+    id: 'wandering',
+    name: 'The Wandering Reef',
+    czech: 'Putující útes',
+    subtitle: 'Útes na hřbetě Strážce proudů',
+    port: 'Junova plošina',
+    mechanic: 'Útes se pohybuje: každý ponor začíná jinde. Dýchací průduchy doplňují kyslík, dutiny pod krunýřem se hroutí.',
+    regions: zones([
+      { name: 'Okraj krunýře', subtitle: 'Symbiotické ryby a první průduchy', baseDepth: 220, amplitude: 40, sand: '#EADFC8', sandDark: '#CDBB98', sandEdge: '#9E8B67', tier: 2, decor: SHELL, front: SHELL_FRONT, landmarks: [], caves: false },
+      { name: 'Dýchací pole', subtitle: 'Řada dýchacích průduchů', baseDepth: 380, amplitude: 70, sand: '#E2D4BA', sandDark: '#C2AE8A', sandEdge: '#927E5B', tier: 3, decor: SHELL, front: SHELL_FRONT, landmarks: [], caves: true, caveChance: 0.25 },
+      { name: 'Zahrady symbiontů', subtitle: 'Mimikry mezi truhlami', baseDepth: 520, amplitude: 90, sand: '#D9C9AC', sandDark: '#B8A27D', sandEdge: '#887251', tier: 3, decor: SHELL, front: SHELL_FRONT, landmarks: [], caves: true, caveChance: 0.3 },
+      { name: 'Rány krunýře', subtitle: 'Prasklé pláty a parazité', baseDepth: 640, amplitude: 100, sand: '#CDBB9C', sandDark: '#AA9370', sandEdge: '#7B6548', tier: 4, decor: SHELL, front: SHELL_FRONT, landmarks: [], caves: true, caveChance: 0.4 },
+      { name: 'Dutina galeony', subtitle: 'Vrak zaklíněný mezi pláty', baseDepth: 780, amplitude: 120, sand: '#BFAB8C', sandDark: '#9A8462', sandEdge: '#6B573D', tier: 4, decor: SHELL, front: SHELL_FRONT, landmarks: [{ decor: 'wreck', chance: 0.6 }], caves: true, caveChance: 0.5 },
+      { name: 'Srdeční jeskyně', subtitle: 'Srdeční kámen Strážce', baseDepth: 900, amplitude: 120, sand: '#AE9A7C', sandDark: '#887356', sandEdge: '#5B4934', tier: 5, decor: ['glow_coral', 'coral_purple', 'rock_big', 'cave_crystal'], front: SHELL_FRONT, landmarks: [{ decor: 'tidewarden', chance: 0.35 }], caves: true, caveChance: 0.5 },
+    ]),
+    backgrounds: [
+      { name: 'bg_reef_back', depth: 0 },
+      { name: 'bg_rift', depth: 85 },
+    ],
+    bossRegion: 4,
+    boss: 'hollow',
+    sharks: { reef: 50, great: 30, deep: 20 },
+    currents: 1.2,
+    tide: { period: 90, strength: 0.6 },
+    darkness: 0.1,
+    recommended: { pressure: 2, thermal: 0, light: 1, cutter: 1 },
+    map: { x: 0.3, y: 0.42 },
+    water: '#3C8CA0',
+    materials: { nacre: 3, biogel: 3, rope: 1 },
+    moving: true,
+    vents: true,
+    mimics: 0.3,
+    heavy: 0.18,
+    unstable: 0.6,
+    expansion: true,
   },
 };
 
 export const OCEAN_ORDER: OceanId[] = ['caribbean', 'arctic', 'mediterranean', 'pacific', 'atlantis', 'abyss', 'graveyard', 'volcanic'];
+
+export const EXPANSION_OCEANS: OceanId[] = ['riptide', 'wandering'];
+
+export const WORLD_OCEANS: OceanId[] = [...OCEAN_ORDER, ...EXPANSION_OCEANS];
+
+export const DEFAULT_TIDE = { period: 90, strength: 0.3 };
+
+const REEF_ROUTE = [
+  { x: 0.3, y: 0.42 },
+  { x: 0.55, y: 0.66 },
+  { x: 0.72, y: 0.48 },
+  { x: 0.5, y: 0.3 },
+  { x: 0.24, y: 0.6 },
+];
+
+export const weekIndex = (date = new Date()) => Math.floor((date.getTime() / 86400000 + 3) / 7);
+
+export function mapPosition(ocean: OceanDef, week = weekIndex()): { x: number; y: number } {
+  if (!ocean.moving) return ocean.map;
+  return REEF_ROUTE[((week % REEF_ROUTE.length) + REEF_ROUTE.length) % REEF_ROUTE.length];
+}
+
+export function reefShift(dives: number): number {
+  return ((dives % 5) - 2) * CHUNK_W;
+}
 
 export const DEFAULT_OCEAN: OceanId = 'caribbean';
 

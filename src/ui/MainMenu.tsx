@@ -23,6 +23,8 @@ interface Props {
   shaftLocked: boolean;
   shaftBest: number;
   challengeName: string | null;
+  onModes: () => void;
+  modesOpen: boolean;
 }
 
 const LOGO_ASPECT = 1.46;
@@ -39,7 +41,7 @@ interface Tile {
   onPress: () => void;
 }
 
-export function MainMenu({ money, width, height, onPlay, onShop, onSettings, onLogbook, onWorldMap, oceanName, onChallenge, onExpedition, expedition, onShaft, shaftLocked, shaftBest, challengeName }: Props) {
+export function MainMenu({ money, width, height, onPlay, onShop, onSettings, onLogbook, onWorldMap, oceanName, onChallenge, onExpedition, expedition, onShaft, shaftLocked, shaftBest, challengeName, onModes, modesOpen }: Props) {
   const insets = useSafeAreaInsets();
   const landscape = width > height;
   const compact = Math.min(width, height) < 520;
@@ -74,6 +76,14 @@ export function MainMenu({ money, width, height, onPlay, onShop, onSettings, onL
       disabled: shaftLocked,
       onPress: onShaft,
     },
+    {
+      key: 'modes',
+      label: modesOpen ? 'Režimy rozšíření' : 'Režimy po kampani',
+      icon: <Icon name="icon_tide" size={iconSize} />,
+      variant: modesOpen ? 'gold' : 'navy',
+      disabled: !modesOpen,
+      onPress: onModes,
+    },
   ];
 
   const play = <GameButton label="HRÁT" size={compact ? 'md' : 'lg'} onPress={onPlay} style={{ width: landscape ? Math.min(logo, menuW) : menuW }} />;
@@ -103,7 +113,7 @@ export function MainMenu({ money, width, height, onPlay, onShop, onSettings, onL
               <GameButton key={tile.key} label={tile.label} variant={tile.variant} size={compact ? 'xs' : 'sm'} icon={tile.icon} disabled={tile.disabled} onPress={tile.onPress} style={{ width: tileW }} />
             ))}
           </View>
-          {showLegend && <Text style={styles.controls}>Ovládání: joystick • WASD / šipky • mezerník = ponor / sonar • B = balón • R = plašič • E = harpuna • H = lékárnička • F = skútr • C = fotoaparát (znovu C = fotka)</Text>}
+          {showLegend && <Text style={styles.controls}>Ovládání: joystick • WASD / šipky • mezerník = ponor / sonar • B = balón • R = plašič • E = harpuna • H = lékárnička • F = skútr • C = fotoaparát (znovu C = fotka) • G = Pip • Q = výbava • X = přepnout výbavu</Text>}
         </View>
       </View>
     </View>

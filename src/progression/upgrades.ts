@@ -6,6 +6,8 @@ import type { SpriteName } from '../render/spriteAssets';
 import { expeditionScale, perkBonus, type PerkLevels } from './expedition';
 import { relicBonus } from './relics';
 import { researchBonus } from './research';
+import type { ModId, ModSlot } from './crafting';
+import { type BoatModules, equipped } from './modules';
 
 export type UpgradeId =
   | 'tank'
@@ -27,7 +29,8 @@ export type UpgradeId =
   | 'pressure'
   | 'cutter'
   | 'camera'
-  | 'boat';
+  | 'boat'
+  | 'drone';
 
 export interface UpgradeDef {
   id: UpgradeId;
@@ -39,6 +42,7 @@ export interface UpgradeDef {
   unlockAt?: number;
   baseCost: number;
   growth: number;
+  expansion?: boolean;
   effect: (level: number) => string;
 }
 
@@ -63,6 +67,7 @@ export const UPGRADES: UpgradeDef[] = [
   { id: 'cutter', name: 'Řezák', description: 'Otevře zapečetěné truhly a vraky', icon: 'icon_cutter', max: 2, extra: 1, baseCost: 1400, growth: 2, effect: (l) => (l ? `řez za ${cutTime(l).toLocaleString('cs-CZ')} s` : 'nemáš') },
   { id: 'camera', name: 'Fotoaparát', description: 'Lepší objektiv: větší dosah a kvalitnější fotky', icon: 'icon_camera', max: 3, extra: 1, baseCost: 350, growth: 1.9, effect: (l) => `dosah ${Math.round(cameraRange(l + 1) / 10)} m` },
   { id: 'boat', name: 'Lodní motor', description: 'Rychlejší plavba po oceánu', icon: 'icon_engine', max: 5, extra: 2, baseCost: 800, growth: 2.1, effect: (l) => `rychlost ${Math.round(((170 + l * 30) / 170) * 100)} %` },
+  { id: 'drone', name: 'Dron Pip', description: 'Mayin průzkumník: odhalí, donese, naskenuje', icon: 'icon_pip', max: 3, extra: 0, baseCost: 1200, growth: 2.5, expansion: true, effect: (l) => (l ? `úroveň ${l}, dosah ${Math.round(droneRangeFor(l) / 10)} m` : 'získáš v příběhu') },
 ];
 
 export type UpgradeLevels = Record<UpgradeId, number>;
@@ -88,12 +93,15 @@ export const EMPTY_LEVELS: UpgradeLevels = {
   cutter: 0,
   camera: 0,
   boat: 0,
+  drone: 0,
 };
 
 export interface Meta {
   expedition: number;
   perks: PerkLevels;
   research?: string[];
+  mods?: Partial<Record<ModSlot, ModId>>;
+  modules?: BoatModules;
 }
 
 export const NO_META: Meta = { expedition: 0, perks: {} };
@@ -102,6 +110,7 @@ export const safeDepthFor = (level: number) => Math.round((80 + level * 45) * DE
 export const thermalFor = (level: number) => Math.max(0.25, 1 - level * 0.18);
 export const cutTime = (level: number) => Math.max(0.6, 2 - level * 0.5);
 export const cameraRange = photoRange;
+export const droneRangeFor = (level: number) => (level ? 260 + (level - 1) * 80 : 0);
 
 export function maxLevel(def: UpgradeDef, expedition: number): number {
   return def.max + Math.min(expedition, def.extra);
@@ -129,19 +138,24 @@ export function statsFor(levels: UpgradeLevels, relics: RelicId[] = [], challeng
   const perk = perkBonus(meta.perks);
   const rules = challenge ? CHALLENGES[challenge] : null;
   const lab = researchBonus(meta.research ?? []);
+  const mods = new Set(Object.values(meta.mods ?? {}));
+  const modules = meta.modules ?? {};
+  const has = (id: ModId) => mods.has(id);
+  const chamber = equipped(modules, 'chamber');
+  const trophy = equipped(modules, 'trophy') ? relics.length * 0.02 : 0;
   return {
     oxygenMax: Math.round(oxygenFor(levels.tank) * (1 + bonus.oxygen + perk.oxygen) * (rules?.oxygen ?? 1)),
     speed: speedFor(levels.fins) * (1 + bonus.speed + lab.speed),
-    armor: Math.min(0.7, armorFor(levels.suit) + bonus.armor),
+    armor: Math.min(0.75, armorFor(levels.suit) + bonus.armor + (chamber ? 0.08 : 0)),
     capacity: rules?.capacity ?? 2 + levels.capacity + lab.capacity,
     sonarRange: rules && !rules.sonar ? 0 : sonarFor(levels.sonar) * (1 + bonus.sonar + lab.sonar),
     light: levels.light,
-    ascent: 1 + levels.ascent * 0.2 + bonus.ascent,
+    ascent: 1 + levels.ascent * 0.2 + bonus.ascent + (chamber ? 0.15 : 0),
     boatSpeed: 170 + levels.boat * 30,
     boatLevel: levels.boat,
     balloons: levels.balloon + (levels.balloon > 0 ? bonus.balloons : 0),
     repellents: levels.repellent,
-    moneyBonus: bonus.money,
+    moneyBonus: bonus.money + trophy + (has('trader') ? 0.08 : 0),
     magnet: bonus.magnet + magnetFor(levels.magnet),
     insurance: insuranceFor(levels.insurance),
     medkits: levels.medkit + lab.medkits,
@@ -151,10 +165,24 @@ export function statsFor(levels: UpgradeLevels, relics: RelicId[] = [], challeng
     danger: scale.danger,
     sharkSpeed: scale.sharkSpeed,
     lootBonus: scale.loot + perk.loot + lab.loot,
-    safeDepth: safeDepthFor(levels.pressure) + lab.depth,
-    thermal: thermalFor(levels.thermal) * lab.thermal,
+    safeDepth: safeDepthFor(levels.pressure) + lab.depth + (has('seal') ? 20 : 0),
+    thermal: thermalFor(levels.thermal) * lab.thermal * (has('seal') ? 0.85 : 1),
     cutter: levels.cutter,
     camera: levels.camera + 1 + lab.camera,
-    drain: lab.drain,
+    drain: lab.drain * (has('cooler') ? 0.85 : 1),
+    drone: levels.drone,
+    droneRange: droneRangeFor(levels.drone) * (equipped(modules, 'radio') ? 1.25 : 1),
+    crane: equipped(modules, 'crane'),
+    bell: equipped(modules, 'bell'),
+    stormSail: equipped(modules, 'sail'),
+    net: has('net'),
+    reserve: has('reserve'),
+    deflect: has('deflect'),
+    quickStart: has('quickstart'),
+    racer: has('racer'),
+    riftArmor: has('riftsuit'),
+    lens: has('lens'),
+    pipMagnet: has('magnet'),
+    harpoonRange: has('longshot') ? 1.4 : 1,
   };
 }

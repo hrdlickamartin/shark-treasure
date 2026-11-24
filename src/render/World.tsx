@@ -30,6 +30,7 @@ import { ShaftSegment, AirView } from './Shaft';
 import { SURFACE_TILE, useClocks } from './clocks';
 import { CaveRock, FrontDecor, SeabedChunk, SurfaceWaves } from './SeabedChunk';
 import { caveAt } from '../game/world';
+import { BellView, CraneView, DroneLight, DroneView, MarkerGlow, MarkerView, RockView, TidePropGlow } from './Tides';
 import { oceanOf } from '../game/oceans';
 
 interface Props {
@@ -88,16 +89,21 @@ export function World({ state, view }: Props) {
         ))}
         {state.airs.map((a) => (visible(a.x, a.y) ? <AirView key={a.id} x={a.x} y={a.y} /> : null))}
         {state.hazards.map((h) => (h.alive && h.kind !== 'crab' && visible(h.x, h.y) ? <HazardView key={h.id} hazard={h} time={time} /> : null))}
-        {state.chests.map((c) => (visible(c.x, c.y) ? <ChestView key={c.id} chest={c} time={time} highlight={inSonar(c.x, c.y) || state.condition === 'night'} /> : null))}
+        {state.chests.map((c) => (visible(c.x, c.y) ? <ChestView key={c.id} chest={c} time={time} highlight={inSonar(c.x, c.y) || state.condition === 'night' || state.revealed.includes(c.id)} shapes={state.rarityShapes} /> : null))}
         {state.coins.map((c) => (visible(c.x, c.y) ? <CoinView key={c.id} x={c.x} y={c.y} /> : null))}
         {state.props.map((p) => (visible(p.x, p.y) ? <PropView key={p.id} prop={p} time={time} /> : null))}
         {state.fish.map((f) => (visible(f.x, f.y) ? <FishView key={f.id} school={f} /> : null))}
         {state.sharks.map((s) => (visible(s.x, s.y) ? <SharkView key={s.id} shark={s} /> : null))}
         {state.balloons.map((b) => (visible(b.x, b.y) ? <BalloonView key={b.id} balloon={b} time={time} /> : null))}
+        <BellView state={state} />
+        <CraneView state={state} />
+        {state.markers.map((m) => (visible(m.x, m.y) ? <MarkerView key={m.id} marker={m} time={time} /> : null))}
+        {state.rocks.map((rk) => (visible(rk.x, rk.y) ? <RockView key={rk.id} rock={rk} time={time} /> : null))}
         {diverOnBoat && <DiverView state={state} />}
         {state.sub && state.phase === 'dive' && <SubmarineView x={state.sub.x} y={state.sub.y} time={time} active={diver.atSub} />}
         <BoatView state={state} />
         {!diverOnBoat && <DiverView state={state} />}
+        {state.phase === 'dive' && diver.state === 'diving' && state.stats.drone > 0 && <DroneView drone={state.drone} time={time} />}
         {minY < 40 && <SurfaceWaves start={Math.floor(minX / SURFACE_TILE) * SURFACE_TILE} count={Math.ceil((maxX - minX) / SURFACE_TILE) + 3} />}
         {chunks.map((chunk) => (
           <FrontDecor key={chunk.index} chunk={chunk} />
@@ -126,6 +132,9 @@ export function World({ state, view }: Props) {
       <View style={[styles.world, { transform: [{ translateX: view.width / 2 - camX + shakeX }, { translateY: -camY + shakeY }] }]} pointerEvents="none">
         {state.hazards.map((h) => (h.alive && h.kind === 'angler' && visible(h.x, h.y) ? <LureGlow key={h.id} hazard={h} time={time} /> : null))}
         {state.props.map((p) => (visible(p.x, p.y) ? <PropGlow key={p.id} prop={p} time={time} /> : null))}
+        {state.props.map((p) => (visible(p.x, p.y) ? <TidePropGlow key={`t${p.id}`} prop={p} time={time} /> : null))}
+        {state.markers.map((m) => (visible(m.x, m.y) ? <MarkerGlow key={m.id} marker={m} time={time} /> : null))}
+        {state.phase === 'dive' && diver.state === 'diving' && state.stats.drone > 0 && <DroneLight drone={state.drone} time={time} />}
         {state.sharks.map((s) => (s.maxHp > 1 && s.dying === 0 && visible(s.x, s.y) ? <BossHealth key={s.id} shark={s} /> : null))}
         {state.harpoonAim && !state.photoAim && <HarpoonReticle target={state.harpoonAim} time={time} />}
         {state.photoAim && <Viewfinder x={state.photoAim.x} y={state.photoAim.y} stars={state.photoAim.stars} ready={state.photoCooldown <= 0} />}

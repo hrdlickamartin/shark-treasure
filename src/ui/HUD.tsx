@@ -1,12 +1,14 @@
 import { memo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { CHESTS } from '../game/catalog';
+import { chestSlots, CHESTS } from '../game/catalog';
 import { CHALLENGES, CONDITIONS } from '../game/modifiers';
 import { greedMultiplier } from '../game/systems/dive';
 import { MAX_HEALTH, PX_PER_M } from '../game/constants';
 import { oceanOf } from '../game/oceans';
 import { regionAt } from '../game/regions';
 import { objectiveProps } from '../game/systems/props';
+import { tideInfo, TIDE_WARNING } from '../game/systems/tide';
+import { MATERIALS, type MaterialId } from '../game/gear';
 import type { GameState, Prop } from '../game/types';
 import type { SpriteName } from '../render/spriteAssets';
 import { Icon } from '../render/Sprite';
@@ -32,6 +34,10 @@ export function propIcon(prop: Prop): SpriteName {
   if (prop.kind === 'node') return 'energy_node';
   if (prop.kind === 'echo') return prop.sprite ?? 'icon_sonar';
   if (prop.kind === 'vault') return 'chest_legendary';
+  if (prop.kind === 'shard') return 'atlantean_shard';
+  if (prop.kind === 'heartstone') return 'heartstone';
+  if (prop.kind === 'scan') return 'icon_pip';
+  if (prop.kind === 'dig') return 'sand_mound';
   return 'map_fragment';
 }
 
@@ -50,6 +56,24 @@ function nearestObjective(state: GameState): { d: number; a: number; icon: Sprit
     best = { d, a: (Math.atan2(c.y - diver.y, c.x - diver.x) * 180) / Math.PI, icon: 'chest_mystery', color: COLORS.aqua };
   }
   return best;
+}
+
+function TideRow({ state, narrow }: { state: GameState; narrow: boolean }) {
+  const tide = tideInfo(state);
+  if (!tide.active || !state.expansion) return null;
+  const warn = tide.strong && tide.remaining <= TIDE_WARNING;
+  const pulse = warn ? 0.55 + Math.abs(Math.sin(state.time * 6)) * 0.45 : 1;
+  const half = tide.period / 2;
+  return (
+    <View style={styles.stat}>
+      <Icon name="icon_tide" size={24} />
+      <View style={[styles.tideRing, { borderColor: warn ? COLORS.coral : tide.high ? COLORS.aqua : COLORS.sky, opacity: pulse }]}>
+        <View style={[styles.tideArrow, { transform: [{ rotate: tide.sign > 0 ? '0deg' : '180deg' }] }]} />
+      </View>
+      <Bar value={tide.remaining / half} color={tide.high ? COLORS.aqua : COLORS.sky} width={narrow ? 56 : 84} blink={warn && Math.floor(state.time * 4) % 2 === 0} />
+      <Text style={[styles.statText, warn && { color: COLORS.coral }]}>{tide.high ? 'Příliv' : 'Odliv'} {Math.ceil(tide.remaining)} s</Text>
+    </View>
+  );
 }
 
 function Bar({ value, color, width, blink }: { value: number; color: string; width: number; blink?: boolean }) {
@@ -157,6 +181,7 @@ export function HUD({ state, narrow, money, topInset, leftInset, rightInset, mar
             <Bar value={oxygenPct} color={low ? '#FF4D67' : COLORS.aqua} width={narrow ? 90 : 130} blink={blink} />
             <Text style={[styles.statText, low && { color: COLORS.coral }]}>{Math.round(oxygenPct * 100)} %</Text>
           </View>
+          <TideRow state={state} narrow={narrow} />
           {ocean.temperature && state.mode === 'sea' && diving && (
             <View style={styles.stat}>
               <Icon name="icon_thermal" size={24} />
@@ -179,17 +204,17 @@ export function HUD({ state, narrow, money, topInset, leftInset, rightInset, mar
       </View>
 
       {narrow && <View style={styles.narrowCenter} pointerEvents="none">{centerBlock}</View>}
-      {diving && (diver.carried.length > 0 || diver.coins > 0 || cargoProps.length > 0) && (
+      {diving && (diver.carried.length > 0 || diver.coins > 0 || cargoProps.length > 0 || Object.keys(state.record.materials).length > 0) && (
         <View style={[styles.carried, { opacity: 0.75 + Math.sin(time * 5) * 0.25 }]} pointerEvents="none">
           {state.mode === 'sea' && <View style={styles.chestRow}>
-            {Array.from({ length: stats.capacity }, (_, i) => {
-              const c = diver.carried[i];
-              return (
-                <View key={i} style={[styles.slot, c && { borderColor: COLORS.gold }]}>
-                  {c ? <Icon name={CHESTS[c.kind].sprite} size={26} /> : null}
-                </View>
-              );
-            })}
+            {diver.carried.map((c, i) => (
+              <View key={c.id + i} style={[styles.slot, { borderColor: c.kind === 'heavy' ? COLORS.orange : COLORS.gold, width: chestSlots(c.kind) * 32 + (chestSlots(c.kind) - 1) * 4 }]}>
+                <Icon name={CHESTS[c.kind].sprite} size={26} />
+              </View>
+            ))}
+            {Array.from({ length: Math.max(0, stats.capacity - diver.carried.reduce((sum, c) => sum + chestSlots(c.kind), 0)) }, (_, i) => (
+              <View key={`e${i}`} style={styles.slot} />
+            ))}
             {cargoProps.map((p) => (
               <View key={p.id} style={[styles.slot, { borderColor: '#F7C6E0' }]}>
                 <Icon name={propIcon(p)} size={26} />
@@ -197,6 +222,16 @@ export function HUD({ state, narrow, money, topInset, leftInset, rightInset, mar
             ))}
           </View>}
           <Text style={styles.carriedText}>+{carriedValue} $ {state.mode === 'endless' ? 'sebráno' : 'nedoručeno'}</Text>
+          {Object.keys(state.record.materials).length > 0 && (
+            <View style={styles.matRow}>
+              {(Object.entries(state.record.materials) as [MaterialId, number][]).map(([id, n]) => (
+                <View key={id} style={styles.mat}>
+                  <Icon name={MATERIALS[id].sprite} size={18} />
+                  <Text style={styles.matText}>{n}</Text>
+                </View>
+              ))}
+            </View>
+          )}
           {multiplier > 1 && <Text style={styles.multiText}>×{multiplier.toLocaleString('cs-CZ')} při doručení</Text>}
         </View>
       )}
@@ -255,6 +290,11 @@ const styles = StyleSheet.create({
   minimap: { width: 180, height: 16, borderRadius: 8, backgroundColor: 'rgba(8, 43, 89, 0.75)', borderWidth: 1.5, borderColor: 'rgba(42, 123, 214, 0.9)', overflow: 'hidden' },
   miniDot: { position: 'absolute', top: 4, width: 6, height: 6, borderRadius: 3 },
   miniCave: { position: 'absolute', top: 2, height: 10, borderRadius: 3, backgroundColor: 'rgba(160, 175, 200, 0.6)' },
+  tideRing: { width: 22, height: 22, borderRadius: 11, borderWidth: 2.5, alignItems: 'center', justifyContent: 'center' },
+  tideArrow: { width: 0, height: 0, borderTopWidth: 5, borderBottomWidth: 5, borderLeftWidth: 9, borderTopColor: 'transparent', borderBottomColor: 'transparent', borderLeftColor: COLORS.white },
+  matRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 4 },
+  mat: { flexDirection: 'row', alignItems: 'center', gap: 2 },
+  matText: { color: COLORS.white, fontFamily: FONTS.title, fontSize: 12, ...textShadow },
   carriedText: { color: COLORS.gold, fontFamily: FONTS.title, fontSize: 13, marginTop: 3, ...textShadow },
 });
 

@@ -313,7 +313,8 @@ test('save z verze 3 převede hotové kapitoly a starý konec', () => {
   assert.ok(save.quests.car_rescue.done);
   assert.ok(!save.quests.ancient_med?.done);
   assert.equal(save.ending, 'guardian');
-  assert.deepEqual(save.pendingDialogs, ['intro_existing']);
+  assert.deepEqual(save.pendingDialogs, ['intro_existing', 'tide_intro_guardian', 'brief:tide_echo']);
+  assert.ok(save.flags.includes('expansion'));
   assert.ok(questProps(save.quests, save.oceans, save.flags, 'mediterranean').some((p) => p.quest === 'idris_inscriptions'));
 });
 

@@ -1,7 +1,10 @@
 import { OCEAN_ORDER, OCEANS, type OceanId } from '../game/oceans';
 import type { DiveResult, PropKind, PropSpec } from '../game/types';
 import type { SpriteName } from '../render/spriteAssets';
+import type { KitCounts, MaterialCounts } from '../game/gear';
 import type { CharacterId, Line } from './characters';
+import type { FactionId } from './factions';
+import { TIDE_QUESTS } from './tideQuests';
 import type { UpgradeId } from './upgrades';
 
 export type QuestCategory = 'main' | 'maya' | 'side' | 'challenge';
@@ -15,13 +18,21 @@ export interface QuestItem {
 
 export type QuestGoal =
   | { kind: 'deliver'; prop: PropKind; items: QuestItem[]; label: string }
-  | { kind: 'activate'; prop: 'lever' | 'node' | 'echo'; items: QuestItem[]; vault?: QuestItem; label: string }
+  | { kind: 'activate'; prop: 'lever' | 'node' | 'echo' | 'scan'; items: QuestItem[]; vault?: QuestItem; label: string }
   | { kind: 'photo'; species: string; label: string }
   | { kind: 'cut'; count: number; label: string }
   | { kind: 'boss'; label: string }
   | { kind: 'chests'; count: number; label: string }
   | { kind: 'reach'; region: number; label: string }
-  | { kind: 'choice'; label: string };
+  | { kind: 'choice'; label: string }
+  | { kind: 'tide'; count: number; label: string }
+  | { kind: 'drone'; count: number; label: string }
+  | { kind: 'escape'; label: string }
+  | { kind: 'heavy'; count: number; label: string }
+  | { kind: 'materials'; count: number; label: string }
+  | { kind: 'reputation'; points: number; factions?: number; faction?: FactionId; label: string }
+  | { kind: 'craft'; label: string }
+  | { kind: 'rifts'; count: number; label: string };
 
 export interface QuestReward {
   money: number;
@@ -30,6 +41,9 @@ export interface QuestReward {
   pearls: number;
   upgrade?: { id: UpgradeId; levels: number; label: string };
   flag?: string;
+  materials?: MaterialCounts;
+  kit?: KitCounts;
+  reputation?: { faction: FactionId; amount: number };
 }
 
 export interface ChoiceOption {
@@ -55,6 +69,8 @@ export interface QuestDef {
   requires?: string[];
   needsFlag?: string;
   chapterEnd?: boolean;
+  chapter?: number;
+  unlocks?: OceanId;
   briefing?: Line[];
   debrief?: Line[];
   choice?: { prompt: Line[]; options: ChoiceOption[] };
@@ -78,7 +94,7 @@ const fragment = (region: number, offset = 900): QuestGoal => ({ kind: 'deliver'
 const echoes = (label: string, items: QuestItem[], vault?: QuestItem): QuestGoal => ({ kind: 'activate', prop: 'echo', items, vault, label });
 const item = (region: number, offset: number, sprite: SpriteName, lift?: number): QuestItem => ({ region, offset, sprite, lift });
 
-export const QUESTS: QuestDef[] = [
+const MAIN_QUESTS: QuestDef[] = [
   {
     id: 'first_dive',
     ocean: 'caribbean',
@@ -685,9 +701,14 @@ export const QUESTS: QuestDef[] = [
   },
 ];
 
+export const QUESTS: QuestDef[] = [...MAIN_QUESTS, ...TIDE_QUESTS];
+
 export const CHAPTER_COUNT = OCEAN_ORDER.length;
 
-export const chapterOf = (quest: QuestDef): number => OCEAN_ORDER.indexOf(quest.ocean);
+export const TIDE_FIRST_CHAPTER = 9;
+export const TIDE_LAST_CHAPTER = 12;
+
+export const chapterOf = (quest: QuestDef): number => (quest.chapter ? quest.chapter - 1 : OCEAN_ORDER.indexOf(quest.ocean));
 
 export const chapterEndFor = (chapter: number): QuestDef | undefined => QUESTS.find((q) => q.chapterEnd && chapterOf(q) === chapter);
 
@@ -734,6 +755,7 @@ export function questProps(quests: Record<string, QuestState>, oceans: OceanId[]
           const id = itemKey(quest.id, s, i);
           if (state.flags.includes(id)) return;
           specs.push({ id, kind: goal.prop, x: itemX(ocean, it), lift: it.lift ?? 24, quest: quest.id, sprite: it.sprite ?? null, active: false, value: 0 });
+          if (goal.prop === 'shard') specs.push({ id: `${id}:rift`, kind: 'rift', x: itemX(ocean, it), lift: it.lift ?? 24, quest: quest.id, sprite: null, active: true, value: 0 });
         });
       } else if (goal.kind === 'activate') {
         goal.items.forEach((it, i) => {
@@ -787,6 +809,16 @@ export function progressQuest(quest: QuestDef, prev: QuestState, result: DiveRes
       done = result.success && result.chests.length >= goal.count;
     } else if (goal.kind === 'reach') {
       done = result.regionMax >= goal.region;
+    } else if (goal.kind === 'tide') {
+      done = result.success && result.gates >= goal.count;
+    } else if (goal.kind === 'drone') {
+      done = result.scans.filter((sc) => !sc.startsWith('net:')).length >= goal.count;
+    } else if (goal.kind === 'escape') {
+      done = result.escapes > 0;
+    } else if (goal.kind === 'heavy') {
+      done = result.heavy >= goal.count;
+    } else if (goal.kind === 'materials') {
+      done = result.success && Object.values(result.materials).reduce((sum, n) => sum + (n ?? 0), 0) >= goal.count;
     }
     if (done) flags.add(stepKey(quest.id, s));
   });
