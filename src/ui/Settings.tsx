@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import type { SaveData } from '../progression/save';
+import type { SaveData } from '../progression/saveData';
 import { GameButton } from './Button';
 import { Overlay, Panel, Title } from './Panel';
 import { COLORS, FONTS } from './theme';
@@ -30,6 +30,7 @@ export function Settings({ settings, onChange, onReset, onClose }: Props) {
         <Toggle label="Hudba" value={settings.music} onToggle={() => onChange({ music: !settings.music })} />
         <Toggle label="Zvukové efekty" value={settings.sfx} onToggle={() => onChange({ sfx: !settings.sfx })} />
         <Toggle label="Vibrace" value={settings.haptics} onToggle={() => onChange({ haptics: !settings.haptics })} />
+        <Toggle label="Ukazatele úkolů" value={settings.markers} onToggle={() => onChange({ markers: !settings.markers })} />
         {confirm ? (
           <View style={styles.confirm}>
             <Text style={styles.warn}>Opravdu smazat veškerý postup?</Text>

@@ -3,12 +3,12 @@ import { Image, StyleSheet, View } from 'react-native';
 import Svg, { Circle, Defs, LinearGradient, RadialGradient, Rect, Stop } from 'react-native-svg';
 import { PX_PER_M } from '../game/constants';
 import { clamp } from '../game/rng';
-import type { View as ViewSize } from '../game/types';
+import type { Condition, View as ViewSize } from '../game/types';
 import { Sprite } from './Sprite';
+import type { OceanBackground } from '../game/oceans';
 import { BACKGROUNDS } from './spriteAssets';
 
 const BG_ASPECT = 1.5;
-const DEPTH_STOPS = [0, 25, 60, 110];
 const BLEND_M = 14;
 const PLANKTON = Array.from({ length: 18 }, (_, i) => ({
   x: (i * 7919) % 997 / 997,
@@ -16,8 +16,8 @@ const PLANKTON = Array.from({ length: 18 }, (_, i) => ({
   s: 1.5 + ((i * 31) % 5) * 0.6,
 }));
 
-function layerOpacities(depthM: number): number[] {
-  const values = DEPTH_STOPS.map((stop, i) => (i === 0 ? 1 : clamp((depthM - stop + BLEND_M) / BLEND_M, 0, 1)));
+function layerOpacities(layers: OceanBackground[], depthM: number): number[] {
+  const values = layers.map(({ depth: stop }, i) => (i === 0 ? 1 : clamp((depthM - stop + BLEND_M) / BLEND_M, 0, 1)));
   let lastFull = 0;
   values.forEach((v, i) => {
     if (v >= 1) lastFull = i;
@@ -48,13 +48,30 @@ const Sky = memo(function Sky({ width, height }: { width: number; height: number
 });
 
 interface Props {
+  condition: Condition;
   camX: number;
   camY: number;
   view: ViewSize;
   time: number;
+  layers: OceanBackground[];
 }
 
-export function Background({ camX, camY, view, time }: Props) {
+const BgTiles = memo(function BgTiles({ source, count, tileW, height, parity }: { source: number; count: number; tileW: number; height: number; parity: number }) {
+  return (
+    <>
+      {Array.from({ length: count }, (_, k) => (
+        <Image
+          key={k}
+          source={source}
+          fadeDuration={0}
+          style={{ position: 'absolute', left: k * tileW - 1, top: 0, width: tileW + 2, height, transform: [{ scaleX: (parity + k) % 2 === 0 ? 1 : -1 }] }}
+        />
+      ))}
+    </>
+  );
+});
+
+export function Background({ camX, camY, view, time, condition, layers }: Props) {
   const { width: W, height: H } = view;
   const surfaceY = -camY;
   const depthM = Math.max(0, (camY + H * 0.46) / PX_PER_M);
@@ -65,7 +82,8 @@ export function Background({ camX, camY, view, time }: Props) {
   const firstTile = Math.floor(scroll / tileW);
   const offset = -(scroll - firstTile * tileW);
   const tiles = Math.ceil(W / tileW) + 2;
-  const opacities = layerOpacities(depthM);
+  const parity = ((firstTile % 2) + 2) % 2;
+  const opacities = layerOpacities(layers, depthM);
   const skyH = Math.max(0, surfaceY);
 
   return (
@@ -74,24 +92,9 @@ export function Background({ camX, camY, view, time }: Props) {
       {opacities.map((opacity, layer) =>
         opacity > 0.01 ? (
           <View key={layer} style={[StyleSheet.absoluteFill, { opacity }]}>
-            {Array.from({ length: tiles }, (_, k) => {
-              const index = firstTile + k;
-              return (
-                <Image
-                  key={index}
-                  source={BACKGROUNDS[layer]}
-                  fadeDuration={0}
-                  style={{
-                    position: 'absolute',
-                    left: offset + k * tileW - 1,
-                    top,
-                    width: tileW + 2,
-                    height,
-                    transform: [{ scaleX: index % 2 === 0 ? 1 : -1 }],
-                  }}
-                />
-              );
-            })}
+            <View style={[styles.tiles, { top, transform: [{ translateX: offset }] }]}>
+              <BgTiles source={BACKGROUNDS[layers[layer].name]} count={tiles} tileW={tileW} height={height} parity={parity} />
+            </View>
           </View>
         ) : null,
       )}
@@ -111,6 +114,10 @@ export function Background({ camX, camY, view, time }: Props) {
             return <Sprite key={i} name="cloud" x={cx} y={skyH * (0.22 + i * 0.16)} width={90 + i * 26} opacity={0.95} />;
           })}
           <Sprite name="island" x={((((W * 0.25 - camX * 0.08) % (W * 2)) + W * 2) % (W * 2)) - W * 0.25} y={skyH + 4} width={150} anchor="bottom" />
+          {condition !== 'normal' && condition !== 'gold' && (
+            <View style={[StyleSheet.absoluteFill, { backgroundColor: condition === 'night' ? '#0A1435' : '#3A4658', opacity: condition === 'night' ? 0.72 : 0.5 }]} />
+          )}
+          {condition === 'night' && <View style={[styles.moon, { left: W * 0.78, top: skyH * 0.18 }]} />}
         </View>
       )}
     </View>
@@ -118,6 +125,8 @@ export function Background({ camX, camY, view, time }: Props) {
 }
 
 const styles = StyleSheet.create({
+  tiles: { position: 'absolute', left: 0, width: 1, height: 1 },
   sky: { position: 'absolute', left: 0, right: 0, top: 0, overflow: 'hidden' },
+  moon: { position: 'absolute', width: 46, height: 46, borderRadius: 23, backgroundColor: '#F4F1D0', shadowColor: '#FFFFFF', shadowOpacity: 0.8, shadowRadius: 12 },
   plankton: { position: 'absolute', backgroundColor: 'rgba(220, 245, 255, 0.55)' },
 });

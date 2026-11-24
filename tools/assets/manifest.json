@@ -225,7 +225,7 @@
       "maxSize": 400
     },
     "kelp": {
-      "prompt": "a very tall kelp stalk, green-olive with leaf blades, base at bottom, front view",
+      "prompt": "a very tall kelp stalk, green-olive with leaf blades, base at bottom, front view, the complete plant from root to the pointed leafy tip at the top, nothing cropped",
       "maxSize": 512
     },
     "logo": {
@@ -374,12 +374,589 @@
     "wreck": {
       "prompt": "a sunken old wooden pirate shipwreck lying on its side, broken mast, holes in hull, side view, base at bottom",
       "maxSize": 640
+    },
+    "balloon": {
+      "prompt": "a bright orange inflatable underwater lift bag balloon (salvage lift bag) with a short rope and a metal hook hanging at the bottom, front view",
+      "maxSize": 200
+    },
+    "octopus": {
+      "prompt": "a cute but mischievous purple-red octopus with big expressive eyes and curly tentacles, swimming pose, front view",
+      "maxSize": 300
+    },
+    "eel": {
+      "prompt": "a green moray eel with open mouth showing small teeth, long body stretched horizontally, head pointing RIGHT, side view, menacing but cartoon",
+      "maxSize": 400,
+      "facing": "right",
+      "rig": {
+        "cuts": [
+          0.58,
+          0.3
+        ],
+        "pivots": [
+          0.5,
+          0.7
+        ]
+      }
+    },
+    "crab": {
+      "prompt": "a red-orange cartoon crab with big raised claws and stalk eyes, grumpy expression, front view",
+      "maxSize": 240
+    },
+    "debris": {
+      "prompt": "a broken wooden ship beam plank with rusty nails and a piece of rope, falling debris, side view",
+      "maxSize": 200
+    },
+    "megalodon": {
+      "prompt": "a gigantic ancient megalodon shark, dark slate-grey body with old scars, huge jaw with stylized teeth, glowing amber eyes, swimming horizontally with head pointing RIGHT, side view, the most impressive boss enemy, menacing but cartoon",
+      "maxSize": 640,
+      "facing": "right",
+      "facingCheck": true,
+      "rig": {
+        "cuts": [
+          0.42,
+          0.18
+        ],
+        "pivots": [
+          0.5,
+          0.48
+        ]
+      }
+    },
+    "relic_compass": {
+      "prompt": "a game UI icon of an ancient golden compass relic with a glowing blue needle, chunky",
+      "maxSize": 160
+    },
+    "relic_pearl": {
+      "prompt": "a game UI icon of a huge glowing pink pearl in an open shell, chunky",
+      "maxSize": 160
+    },
+    "relic_trident": {
+      "prompt": "a game UI icon of a small golden trident relic with gems, chunky",
+      "maxSize": 160
+    },
+    "relic_mask": {
+      "prompt": "a game UI icon of an ancient jade tribal mask relic, chunky",
+      "maxSize": 160
+    },
+    "relic_coin": {
+      "prompt": "a game UI icon of an ancient silver doubloon coin with a skull engraving, chunky",
+      "maxSize": 160
+    },
+    "relic_horn": {
+      "prompt": "a game UI icon of a spiral conch shell horn relic with golden rim, chunky",
+      "maxSize": 160
+    },
+    "relic_idol": {
+      "prompt": "a game UI icon of a small golden shark idol statue relic, chunky",
+      "maxSize": 160
+    },
+    "relic_map": {
+      "prompt": "a game UI icon of a rolled ancient treasure map with a red X and wax seal, chunky",
+      "maxSize": 160
+    },
+    "icon_repellent": {
+      "prompt": "a game UI icon of a green spray canister of shark repellent with a crossed shark symbol, chunky",
+      "maxSize": 192
+    },
+    "icon_map": {
+      "prompt": "a game UI icon of a folded sea chart map with a compass rose, chunky",
+      "maxSize": 192
+    },
+    "icon_calendar": {
+      "prompt": "a game UI icon of a calendar page with a golden star, chunky",
+      "maxSize": 192
+    },
+    "icon_brush": {
+      "prompt": "a game UI icon of a paint brush with colorful paint splashes, chunky",
+      "maxSize": 192
+    },
+    "megalodon_q": {
+      "prompt": "the exact same megalodon shark as the reference in a THREE-QUARTER FRONT VIEW, mid-turn toward the viewer, rotated about 45 degrees so its front faces the camera and slightly to the right, clear depth and foreshortening",
+      "maxSize": 640,
+      "references": [
+        "megalodon"
+      ]
+    },
+    "diver_swim1_coral": {
+      "derive": {
+        "from": "diver_swim1",
+        "hue": 0.985
+      },
+      "rig": {
+        "cuts": [
+          0.37,
+          0.22
+        ],
+        "pivots": [
+          0.62,
+          0.62
+        ]
+      }
+    },
+    "diver_swim1_reef": {
+      "derive": {
+        "from": "diver_swim1",
+        "hue": 0.36
+      },
+      "rig": {
+        "cuts": [
+          0.37,
+          0.22
+        ],
+        "pivots": [
+          0.62,
+          0.62
+        ]
+      }
+    },
+    "diver_swim1_royal": {
+      "derive": {
+        "from": "diver_swim1",
+        "hue": 0.79
+      },
+      "rig": {
+        "cuts": [
+          0.37,
+          0.22
+        ],
+        "pivots": [
+          0.62,
+          0.62
+        ]
+      }
+    },
+    "diver_carry_coral": {
+      "derive": {
+        "from": "diver_carry",
+        "hue": 0.985
+      },
+      "rig": {
+        "cuts": [
+          0.4,
+          0.22
+        ],
+        "pivots": [
+          0.66,
+          0.66
+        ]
+      }
+    },
+    "diver_carry_reef": {
+      "derive": {
+        "from": "diver_carry",
+        "hue": 0.36
+      },
+      "rig": {
+        "cuts": [
+          0.4,
+          0.22
+        ],
+        "pivots": [
+          0.66,
+          0.66
+        ]
+      }
+    },
+    "diver_carry_royal": {
+      "derive": {
+        "from": "diver_carry",
+        "hue": 0.79
+      },
+      "rig": {
+        "cuts": [
+          0.4,
+          0.22
+        ],
+        "pivots": [
+          0.66,
+          0.66
+        ]
+      }
+    },
+    "diver_idle_coral": {
+      "derive": {
+        "from": "diver_idle",
+        "hue": 0.985
+      }
+    },
+    "diver_idle_reef": {
+      "derive": {
+        "from": "diver_idle",
+        "hue": 0.36
+      }
+    },
+    "diver_idle_royal": {
+      "derive": {
+        "from": "diver_idle",
+        "hue": 0.79
+      }
+    },
+    "diver_hurt_coral": {
+      "derive": {
+        "from": "diver_hurt",
+        "hue": 0.985
+      }
+    },
+    "diver_hurt_reef": {
+      "derive": {
+        "from": "diver_hurt",
+        "hue": 0.36
+      }
+    },
+    "diver_hurt_royal": {
+      "derive": {
+        "from": "diver_hurt",
+        "hue": 0.79
+      }
+    },
+    "diver_climb_coral": {
+      "derive": {
+        "from": "diver_climb",
+        "hue": 0.985
+      }
+    },
+    "diver_climb_reef": {
+      "derive": {
+        "from": "diver_climb",
+        "hue": 0.36
+      }
+    },
+    "diver_climb_royal": {
+      "derive": {
+        "from": "diver_climb",
+        "hue": 0.79
+      }
+    },
+    "diver_swim_q_coral": {
+      "derive": {
+        "from": "diver_swim_q",
+        "hue": 0.985
+      }
+    },
+    "diver_swim_q_reef": {
+      "derive": {
+        "from": "diver_swim_q",
+        "hue": 0.36
+      }
+    },
+    "diver_swim_q_royal": {
+      "derive": {
+        "from": "diver_swim_q",
+        "hue": 0.79
+      }
+    },
+    "diver_carry_q_coral": {
+      "derive": {
+        "from": "diver_carry_q",
+        "hue": 0.985
+      }
+    },
+    "diver_carry_q_reef": {
+      "derive": {
+        "from": "diver_carry_q",
+        "hue": 0.36
+      }
+    },
+    "diver_carry_q_royal": {
+      "derive": {
+        "from": "diver_carry_q",
+        "hue": 0.79
+      }
+    },
+    "cave_rock_a": {
+      "prompt": "a wide horizontal cluster of chunky rounded dark blue underwater boulders with green moss patches and a few small barnacles, flat-ish elongated shape about three times wider than tall, side view, same style and colors as the reference rock",
+      "maxSize": 400,
+      "references": [
+        "rock_big"
+      ]
+    },
+    "cave_rock_b": {
+      "prompt": "a different wide horizontal cluster of rounded dark blue underwater stones with moss, a small pink coral and a starfish, elongated shape about three times wider than tall, side view, same style and colors as the reference rock",
+      "maxSize": 400,
+      "references": [
+        "rock_big"
+      ]
+    },
+    "stalactite": {
+      "prompt": "a group of three dark blue rock stalactites hanging DOWNWARD from the top edge, mossy at the top, tips pointing down with tiny glowing cyan dots, side view, same style and colors as the reference rock",
+      "maxSize": 260,
+      "references": [
+        "rock_big"
+      ]
+    },
+    "cave_crystal": {
+      "prompt": "a small cluster of glowing cyan and turquoise crystals growing from a dark blue rock base, soft magical glow, side view",
+      "maxSize": 200,
+      "references": [
+        "rock_big"
+      ]
+    },
+    "hanging_weed": {
+      "prompt": "long green seaweed strands hanging DOWNWARD from the top edge, attached at the top, wavy leaves, tips at the bottom, front view",
+      "maxSize": 260
+    },
+    "icon_magnet": {
+      "prompt": "a game UI icon of a red horseshoe magnet attracting small gold coins, chunky",
+      "maxSize": 192
+    },
+    "icon_medkit": {
+      "prompt": "a game UI icon of a waterproof white and red first aid kit box with a red cross, chunky",
+      "maxSize": 192
+    },
+    "icon_scooter": {
+      "prompt": "a game UI icon of a yellow underwater diver propulsion scooter with a propeller and bubbles, chunky",
+      "maxSize": 192
+    },
+    "icon_insurance": {
+      "prompt": "a game UI icon of a blue shield with a small gold treasure chest emblem, chunky",
+      "maxSize": 192
+    },
+    "icon_pearl": {
+      "prompt": "a game UI icon of a shiny white pearl in an open pink seashell, chunky",
+      "maxSize": 192
+    },
+    "icon_expedition": {
+      "prompt": "a game UI icon of a nautical brass compass rose with a red needle, chunky",
+      "maxSize": 192
+    },
+    "icon_harpoon": {
+      "prompt": "a game UI icon of a compact yellow and navy underwater harpoon launcher with a silver harpoon tip, chunky",
+      "maxSize": 192
+    },
+    "icon_submarine": {
+      "prompt": "a game UI icon of a small round yellow mini submarine with a porthole and propeller, chunky",
+      "maxSize": 192
+    },
+    "submarine": {
+      "prompt": "a small rounded yellow mini submarine side view facing RIGHT, navy outlines, big glowing porthole window, orange stripe, small propeller at the back on the left, short periscope, a small oxygen tank with a hose and mouthpiece hanging below",
+      "maxSize": 360
+    },
+    "anglerfish": {
+      "prompt": "a deep sea anglerfish side view facing RIGHT, dark navy-purple body, big toothy grin, small eyes, a glowing yellow-cyan lure bulb on a stalk curving forward above its head, menacing but stylized cartoon",
+      "maxSize": 300
+    },
+    "electric_ray": {
+      "prompt": "an electric ray (torpedo ray) seen from slightly above, side-ish view facing RIGHT, round flat teal-blue body with yellow electric spots and a short tail, subtle blue-yellow electric sparks around the edges",
+      "maxSize": 300
+    },
+    "spike_trap": {
+      "prompt": "an underwater spiked trap: dark navy metal base plate with a row of sharp bright silver spikes pointing up, small warning red light on the base",
+      "maxSize": 200
+    },
+    "glow_coral": {
+      "prompt": "a bioluminescent deep sea coral cluster with glowing violet and magenta branches and small cyan glowing tips, growing upward from a small base",
+      "maxSize": 220
+    },
+    "trench_vent": {
+      "prompt": "a hydrothermal vent chimney: dark rocky tapered tower with orange glowing cracks at the base, a plume of shimmering bubbles coming out of the top",
+      "maxSize": 240
+    },
+    "city_pillar": {
+      "prompt": "a tall broken ancient underwater column of pale blue stone with gold ornaments and a faintly glowing gold rune, slightly overgrown with small seaweed",
+      "maxSize": 300
+    },
+    "city_statue": {
+      "prompt": "an ancient underwater statue of a guardian with a trident on a stone pedestal, pale blue stone with gold accents and softly glowing gold eyes, some cracks and small seaweed",
+      "maxSize": 320
+    },
+    "map_fragment": {
+      "prompt": "a torn piece of an old treasure map parchment with glowing golden lines, an X mark and a small compass rose, slightly curled edges",
+      "maxSize": 160
+    },
+    "chest_jeweled": {
+      "prompt": "a treasure chest encrusted with big sparkling gems: dark wood with gold trim, large pink, cyan and green jewels on the lid and front, slightly open with jewels glowing inside, side view facing RIGHT",
+      "maxSize": 220
+    },
+    "icon_story": {
+      "prompt": "a game UI icon of a rolled old parchment scroll with a red wax seal and a small golden glowing heart-shaped gem, chunky",
+      "maxSize": 192
+    },
+    "orca": {
+      "prompt": "an orca killer whale, strict side view facing RIGHT, body straight and horizontal like a swimming shark (not curved or arched), head on the right, tail flukes level on the far left, tall dorsal fin standing up in the middle of the back, solid opaque black body with OPAQUE pure white belly and white eye patch (the white areas are painted, never transparent), strong but stylized, slightly menacing",
+      "maxSize": 400,
+      "facing": "right",
+      "facingCheck": true,
+      "rig": {
+        "cuts": [
+          0.42,
+          0.21
+        ],
+        "pivots": [
+          0.6,
+          0.58
+        ]
+      }
+    },
+    "orca_q": {
+      "prompt": "the exact same cartoon orca killer whale as the reference in a THREE-QUARTER FRONT VIEW, mid-turn toward the viewer, rotated about 45 degrees so its front faces the camera and slightly to the right, clear depth and foreshortening, opaque white patches",
+      "references": [
+        "orca"
+      ],
+      "maxSize": 400
+    },
+    "leviathan": {
+      "prompt": "a gigantic ancient arctic sea serpent leviathan, strict side view facing RIGHT, long icy blue scaled body stretched HORIZONTALLY in one gentle shallow wave (not coiled, not S-shaped, no loops), head with huge jaws and glowing pale eyes on the far right, body tapering to a thin tail tip on the far left, frosty spikes along the back, solid opaque colors",
+      "maxSize": 480,
+      "facing": "right",
+      "facingCheck": true,
+      "rig": {
+        "cuts": [
+          0.68,
+          0.52,
+          0.36,
+          0.2
+        ],
+        "pivots": [
+          0.8,
+          0.55,
+          0.76,
+          0.63
+        ]
+      }
+    },
+    "whale": {
+      "prompt": "a gentle humpback whale side view facing RIGHT, blue-grey body with pale belly grooves and long pectoral fin, friendly expression",
+      "maxSize": 420
+    },
+    "guardian": {
+      "prompt": "an ancient Atlantean guardian construct floating in water, stone and gold armored body shaped like a stylized fish-knight, glowing cyan core in its chest and glowing eyes, facing RIGHT",
+      "maxSize": 300
+    },
+    "abyssal_creature": {
+      "prompt": "an unknown abyssal deep sea creature side view facing RIGHT, long dark indigo eel-like body with many glowing cyan bioluminescent spots and translucent fins, huge eye",
+      "maxSize": 380,
+      "facing": "right",
+      "facingCheck": false,
+      "rig": {
+        "cuts": [
+          0.5,
+          0.25
+        ],
+        "pivots": [
+          0.5,
+          0.5
+        ]
+      }
+    },
+    "ice_block": {
+      "prompt": "a chunk of translucent blue glacier ice with sharp facets, sitting on the seabed",
+      "maxSize": 220
+    },
+    "ice_crystal": {
+      "prompt": "a cluster of pale cyan ice crystals growing upward from a small rock base, glinting",
+      "maxSize": 200
+    },
+    "amphora": {
+      "prompt": "an ancient Greek terracotta amphora with black painted patterns, slightly tilted, small barnacles",
+      "maxSize": 140
+    },
+    "marble_column": {
+      "prompt": "a broken white marble Greek column with fluted shaft and ionic capital, standing upright, some cracks and seaweed",
+      "maxSize": 260
+    },
+    "giant_kelp": {
+      "prompt": "a very tall giant kelp stalk with golden-green leaves and air bladders, growing upward",
+      "maxSize": 260
+    },
+    "ghost_ship": {
+      "prompt": "a sunken ghostly old sailing ship wreck lying on the seabed side view, torn sails, broken masts, faint eerie green glow from windows",
+      "maxSize": 640
+    },
+    "lava_vent": {
+      "prompt": "a black basalt lava vent chimney with bright orange glowing magma cracks and a glowing red-orange top, side view",
+      "maxSize": 240
+    },
+    "thermal_beacon": {
+      "prompt": "an underwater heating beacon buoy anchored to the seabed: yellow metal capsule with a glowing warm orange lamp and a small red light, research equipment style",
+      "maxSize": 200
+    },
+    "lever": {
+      "prompt": "an ancient stone and bronze lever mechanism on a carved base with a glowing rune, lever handle tilted to the left",
+      "maxSize": 170
+    },
+    "energy_node": {
+      "prompt": "an Atlantean energy node: a floating golden ring frame around a glowing cyan crystal core on a stone pedestal",
+      "maxSize": 190
+    },
+    "chest_sealed": {
+      "prompt": "a heavy treasure chest wrapped in thick rusty chains with a big padlock, barnacles, side view facing RIGHT",
+      "maxSize": 220
+    },
+    "icon_thermal": {
+      "prompt": "a game UI icon of an orange thermal wetsuit with a small flame and snowflake symbol, chunky",
+      "maxSize": 192
+    },
+    "icon_pressure": {
+      "prompt": "a game UI icon of a heavy deep sea pressure diving suit helmet in yellow metal with a pressure gauge, chunky",
+      "maxSize": 192
+    },
+    "icon_cutter": {
+      "prompt": "a game UI icon of an underwater plasma cutting torch tool with a bright blue flame, chunky",
+      "maxSize": 192
+    },
+    "icon_camera": {
+      "prompt": "a game UI icon of a yellow underwater camera housing with a big lens and two flash lights, chunky",
+      "maxSize": 192
+    },
+    "icon_research": {
+      "prompt": "a game UI icon of a scientific flask with glowing cyan liquid and a small DNA spiral, chunky",
+      "maxSize": 192
+    },
+    "portrait_maya": {
+      "prompt": "head and shoulders character portrait bust for a dialogue box, facing slightly right, friendly readable expression, Maya Torres, young Latina oceanographer and mechanic, dark wavy hair in a messy bun, teal and orange work jacket, tool belt strap, holding a tablet, optimistic slightly sarcastic smile",
+      "maxSize": 256
+    },
+    "portrait_nora": {
+      "prompt": "head and shoulders character portrait bust for a dialogue box, facing slightly right, friendly readable expression, Captain Nora Vale, weathered harbor master in her fifties, grey short hair, navy captain coat and cap, stern but kind eyes",
+      "maxSize": 256
+    },
+    "portrait_idris": {
+      "prompt": "head and shoulders character portrait bust for a dialogue box, facing slightly right, friendly readable expression, Professor Idris Bell, older Black archaeologist with round glasses, short white beard, khaki field vest, holding a small magnifying glass",
+      "maxSize": 256
+    },
+    "portrait_rook": {
+      "prompt": "head and shoulders character portrait bust for a dialogue box, facing slightly right, friendly readable expression, Rook (Marcus Vane), cocky rival treasure hunter in his thirties, stubble, red bandana, leather jacket over a wetsuit, confident grin",
+      "maxSize": 256
+    },
+    "portrait_voss": {
+      "prompt": "head and shoulders character portrait bust for a dialogue box, facing slightly right, friendly readable expression, Dr. Selene Voss, elegant cool scientist director in her forties, sleek silver bob haircut, dark high-collar coat with a small glowing abyss logo pin, calm calculating look",
+      "maxSize": 256
+    },
+    "portrait_diego": {
+      "prompt": "head and shoulders character portrait bust for a dialogue box, facing slightly right, friendly readable expression, Diego Torres, Mayas older brother, tired young researcher, dark hair, scruffy beard, worn diving suit with a research patch, guilty but hopeful look",
+      "maxSize": 256
+    },
+    "portrait_elias": {
+      "prompt": "head and shoulders character portrait bust for a dialogue box, facing slightly right, friendly readable expression, Elias, legendary old ocean explorer grandfather, white beard, weathered skin, knitted captain hat, warm adventurous eyes, vintage diving gear collar",
+      "maxSize": 256
+    },
+    "elias_disk": {
+      "prompt": "an ancient round bronze metal disk with a glowing cyan engraved spiral symbol and small runes, slightly corroded",
+      "maxSize": 140
+    },
+    "receiver_part": {
+      "prompt": "a waterproof sonar receiver electronic component with an antenna coil and a small green light, slightly rusty",
+      "maxSize": 140
+    },
+    "research_module": {
+      "prompt": "a compact yellow underwater research data module box with a blinking blue light, a handle and a research logo sticker",
+      "maxSize": 150
     }
   },
   "backgrounds": {
     "bg_shallow": "Shallow Reef 0-20 m: bright turquoise azure water, sun light rays from top, distant sandy dunes and faint coral silhouettes at the bottom, small far fish schools",
     "bg_coral": "Coral Bay 20-50 m: blue water, distant colorful coral reef silhouettes and rocky formations, cave openings, soft light rays",
     "bg_wreck": "Shipwreck 50-100 m: darker blue teal water, distant silhouettes of sunken ships and debris, metal wreckage, faint light from above",
-    "bg_deep": "Deep Ocean 100 m+: dark navy blue water but not pitch black, distant bioluminescent plants with cyan glow, ancient ruins silhouettes, floating glowing particles"
+    "bg_deep": "Deep Ocean 100 m+: dark navy blue water but not pitch black, distant bioluminescent plants with cyan glow, ancient ruins silhouettes, floating glowing particles",
+    "bg_trench": "Abyssal Trench 150-250 m: deep indigo and violet water, steep dark trench walls fading into haze, faint purple and magenta bioluminescent coral and tube worms, rising bubble columns from distant hydrothermal vents, floating glowing particles",
+    "bg_city": "Lost City 250 m+: deep blue water with soft magical gold light, distant silhouettes of a sunken ancient city with domes, towers, arches and columns, glowing golden runes and windows, floating sparkles",
+    "bg_arctic": "Arctic Frontier underwater: icy pale blue water, huge floating ice floes and icebergs seen from below with light filtering through cracks, white ice walls and frozen shelves in the distance, drifting snow-like particles",
+    "bg_mediterranean": "Mediterranean Secrets underwater: clear azure water with warm sandy light, distant sunken ancient Greek and Roman temple ruins, broken columns, amphorae fields and statues, soft god rays",
+    "bg_pacific": "Pacific Wilds underwater: vivid tropical blue water, towering giant kelp forest columns and huge coral reef walls in the distance, a distant whale silhouette, sun rays",
+    "bg_graveyard": "Ship Graveyard underwater: murky grey-teal water, many silhouettes of sunken ships from different eras stacked in a labyrinth, rusty hulls, masts and cargo containers, eerie dim light",
+    "bg_volcanic": "Volcanic Depths underwater: very dark water with black basalt rock formations, glowing orange magma cracks and lava vents in the distance, rising hot bubbles, red-orange glow"
+  },
+  "illustrations": {
+    "world_map": "illustrated stylized world map of fantasy oceans (Caribbean, Arctic, Mediterranean, Pacific, Atlantis, Abyss, Ship Graveyard, Volcanic), no text"
   }
 }

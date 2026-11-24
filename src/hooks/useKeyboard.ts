@@ -7,11 +7,11 @@ const RIGHT = ['ArrowRight', 'KeyD'];
 const UP = ['ArrowUp', 'KeyW'];
 const DOWN = ['ArrowDown', 'KeyS'];
 
-export function useKeyboard(onAction: () => void, onPause: () => void) {
+export function useKeyboard(onAction: () => void, onPause: () => void, onKey: (code: string) => void) {
   const pressed = useRef(new Set<string>());
   const input = useRef<Input>({ x: 0, y: 0 });
-  const handlers = useRef({ onAction, onPause });
-  handlers.current = { onAction, onPause };
+  const handlers = useRef({ onAction, onPause, onKey });
+  handlers.current = { onAction, onPause, onKey };
 
   useEffect(() => {
     if (Platform.OS !== 'web' || typeof window === 'undefined') return;
@@ -27,6 +27,7 @@ export function useKeyboard(onAction: () => void, onPause: () => void) {
       if ([...LEFT, ...RIGHT, ...UP, ...DOWN, 'Space'].includes(e.code)) e.preventDefault();
       if (e.code === 'Space' && !e.repeat) handlers.current.onAction();
       if ((e.code === 'Escape' || e.code === 'KeyP') && !e.repeat) handlers.current.onPause();
+      if (!e.repeat) handlers.current.onKey(e.code);
       keys.add(e.code);
       recompute();
     };

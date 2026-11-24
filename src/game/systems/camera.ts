@@ -1,4 +1,4 @@
-import { seabedY } from '../terrain';
+import { floorAt } from '../terrain';
 import type { GameState, View } from '../types';
 
 export function cameraTarget(state: GameState, view: View): { x: number; y: number } {
@@ -7,7 +7,7 @@ export function cameraTarget(state: GameState, view: View): { x: number; y: numb
   const x = diver.x;
   let y = diver.y - view.height * 0.46;
   const minY = -view.height * 0.42;
-  const maxY = seabedY(state.seed, x) + 70 - view.height;
+  const maxY = floorAt(state, x) + 70 - view.height;
   y = Math.max(minY, Math.min(Math.max(minY, maxY), y));
   return { x, y };
 }

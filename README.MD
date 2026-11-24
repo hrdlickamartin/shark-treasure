@@ -863,8 +863,37 @@ Kontroly: `npx tsc --noEmit`, `npx expo lint`.
 ## Struktura
 
 - `src/game` – herní engine bez Reactu: svět generovaný po segmentech (`world.ts`, `terrain.ts`, `regions.ts`), katalog truhlic a žraloků (`catalog.ts`), systémy v `systems/` (pohyb, kyslík, žraloci a nebezpečí, poklady, kolize, ponor, kamera, efekty) a `engine.ts` se smyčkou `step()`.
-- `src/progression` – vylepšení, mise, ukládání postupu (AsyncStorage).
+- `src/progression` – vylepšení, mise, questy, katalog, výzkum, výpravy a perlové výhody; vyhodnocení ponoru `progress.ts`, save s verzí a migrací `saveData.ts`, ukládání `save.ts` (AsyncStorage).
 - `src/render` – vykreslení scény (pozadí podle hloubky, mořské dno, postavy, efekty, tma v hlubinách).
 - `src/ui` – HUD, joystick, menu, shrnutí ponoru, obchod, mise, nastavení, pauza.
 - `src/audio` – hudba a zvukové efekty (expo-audio).
 - `assets/sprites`, `assets/backgrounds`, `assets/audio` – vygenerované assety podle grafického manuálu.
+
+## Herní mechaniky
+
+- **Kyslík**: u hladiny neubývá (pomalu se doplňuje), ve vzduchových kapsách jeskyní se rychle doplní.
+- **Násobič chamtivosti**: 2 truhlice ×1,25, 3 ×1,5, 4+ ×2 při doručení najednou.
+- **Zvedací balón** (upgrade, klávesa B): pošle truhlici k hladině; žralok ho může prokousnout, posádka vyloví balóny do ~110 m od lodi i po neúspěšném ponoru.
+- **Plašič žraloků** (upgrade, klávesa R): na 5 s odežene žraloky v okolí.
+- **Magnet na mince**, **pojištění nákladu** (při nezdaru vrátí část pokladu), **lékárnička** (klávesa H, +50 zdraví) a **podvodní skútr** (klávesa F, krátký výpad); lékárnička a skútr se odemknou od 2. výpravy.
+- **Harpuna** (klávesa E) omráčí a zažene žraloka před potápěčem, Megalodona na chvíli unaví; **mini ponorka** (od 3. výpravy) kotví pod lodí v 25–85 m a doplňuje kyslík.
+- **Výpravy**: s lodí na maximu a ukradeným pokladem Megalodona lze vyplout na novou výpravu (`src/progression/embark.ts`). Peníze, vybavení a mise se resetují, relikvie, vzhledy a deník zůstávají. Každá výprava zvedne strop vybavení o úroveň, zvýší nebezpečí, rychlost žraloků, hodnotu pokladů i odměny misí (`src/progression/expedition.ts`).
+- **Hlubinný ponor** (od 50 m): svislá šachta bez dna (`src/game/endless.ts`, v kódu režim `endless`), kyslíkové bubliny, s hloubkou víc a silnějších žraloků, medúz a min. Mince a bonus za hloubku se vyplatí vždy, za každých nových 100 m rekordu perla; mise se v propasti nepočítají.
+- **Ovládání na mobilu**: joystick vlevo, akční kolečko vpravo (`src/ui/DiveActions.tsx`) – sonar uprostřed, vybavení na pevných místech kolem něj; tlačítka se ukazují jen když dávají smysl (lékárnička při zranění, balón s nákladem).
+- **The Lost Oceans** (rozšíření podle GDD, plán v `docs/lost-oceans.md`): 8 oceánů jako data (`src/game/oceans.ts`) – Karibik, Arktida, Středomoří, Tichomoří, Atlantida, Propast, Hřbitov lodí, Vulkanické hlubiny – každý s 5–6 lokacemi, pozadím, faunou a mechanikou (chlad a topné majáky, páky a klenotnice, silné proudy a velryby, energetické uzly a Strážce, tma a tlak, zapečetěné vraky a řezák, žár a gejzíry). Mapa světa s briefingem (`src/ui/WorldMap.tsx`), oceány se odemykají hlavním příběhem a nová výprava je neresetuje.
+- **Questy** (`src/progression/quests.ts`, plán v `docs/story-bible.md`): vícekrokové úkoly v kategoriích Hlavní příběh, Mayiny prosby, Vedlejší příběhy a Výzvy, s řetězy (`requires`), příznaky činů (`flags`) a volbami v dialogu. Karibik má 8 příběhových questů (First Dive … Beyond the Reef), dál běží linky Diega, Rooka a Voss. Questové předměty jsou interaktivní objekty (`src/game/systems/props.ts`), jejich stav žije v save, pozice nezávisí na seedu.
+- **Příběh a postavy** (`src/progression/characters.ts`, `dialogue.ts`): Maya Torres jako průvodkyně – prolog, briefingy a debriefy na lodi (`src/ui/Dialogue.tsx`), rádiové hlášky během ponoru; Nora, Idris, Rook, Voss, Diego a Elias s portréty. Čtyři konce (`src/progression/story.ts`): Strážci oceánu se odemknou jen za záchranu Diega, výzkum a pomoc regionům. Ukazatele úkolů jdou vypnout v nastavení.
+- **Prostředí** (`src/game/systems/environment.ts`): tlak pod bezpečnou hloubkou (tlakový oblek), teplota v Arktidě a ve vulkánech (termooblek, majáky), mlha a tma podle oceánu.
+- **Fotografování, katalog a výzkum**: fotoaparát (klávesa C) fotí tvory 1–3/3 podle vzdálenosti a klidu, katalog 21 druhů (`src/progression/encyclopedia.ts`), výzkumná data za fotky, lokace, relikvie a questy, výzkumný strom a úroveň průzkumníka (`src/progression/research.ts`). Vše v Deníku (`src/ui/Logbook.tsx`).
+- **Události na moři** (`src/game/systems/events.ts`): ztracený náklad, obchodník se zásobami, neznámý signál, SOS, velryby, bouře.
+- **Truhly**: obyčejná, kovaná, zlatá, vzácná, starověká, mystery (náhodná hodnota) a drahokamová (Deep Ocean a hlouběji, 900–1 300 $, šance na relikvii).
+- **Perly a perlový obchod**: za každou výpravu perly podle vydělaných peněz; trvalé výhody (startovní kapitál, cennější truhly, víc kyslíku, lepší loď, vybavení od 1. úrovně).
+- **Jeskyně** se stropem, tmou, cennější truhlou, murénou a vzduchovou kapsou; **vraky** s padajícími troskami.
+- **Tvorové**: chobotnice se brání inkoustem (nezraňuje), muréna vyráží z díry, krab na truhle (obeplav ho zezadu).
+- **Tvorové hlubin** (`src/game/systems/creatures.ts`): ďas číhá ve tmě a prozradí ho svítící lákadlo (kreslí se nad tmou), elektrický rejnok se viditelně nabíjí a pak vybije pole s omráčením, toxický mrak s čárkovanou hranicí zraňuje postupně, ostnatá past na dně a stěnách propasti vysouvá hroty s varovným bliknutím.
+- **Bossové**: Megalodon (Karibik, Legendary Cave), Leviatan (Arktida), Tvor z hlubin (Propast) hlídají poklad s relikvií – ohlásí se, provedou výpad a pak odpočívají; Strážce Atlantidy se uspí energetickými uzly.
+- **Relikvie** (8 kusů) z epických, legendárních, mystery truhel a od Megalodona dávají trvalé bonusy, kompletní sada +20 % k pokladům.
+- **Podmínky ponoru**: klidné moře, noc (×2), bouře (proudy, ×1,3), zlatá horečka (víc truhlic a mincí).
+- **Výzva dne**: jednou denně ponor s modifikátorem a vyšší odměnou.
+- **Deník**: úkoly podle kategorií se splněnými, posádka a vztah s Mayou, katalog, výzkum, mise a sbírka (relikvie, lokace); během ponoru minimapa a jedna šipka k nejbližšímu cíli.
+- **Vzhled**: barevné neopreny v obchodě (`python3 tools/assets/assets.py derive`).

@@ -14,6 +14,13 @@ export function updateAmbient(state: GameState, dt: number) {
       p.vx *= Math.exp(-1.5 * dt);
     } else if (p.kind === 'splash') {
       p.vy += 400 * dt;
+    } else if (p.kind === 'rain') {
+      p.vy += 200 * dt;
+      if (p.y > 2) p.life = 0;
+    } else if (p.kind === 'ink' || p.kind === 'cloud') {
+      p.vx *= Math.exp(-2 * dt);
+      p.vy *= Math.exp(-2 * dt);
+      p.size += dt * 18;
     } else {
       p.vx *= Math.exp(-3 * dt);
       p.vy *= Math.exp(-3 * dt);
@@ -43,9 +50,32 @@ export function updateAmbient(state: GameState, dt: number) {
     }
   }
 
+  if (state.particles.length < 80 && Math.random() < dt * 3) {
+    for (const chunk of state.chunks.values()) {
+      const cave = chunk.cave;
+      if (!cave || Math.abs(chunk.x0 + 240 - state.camera.x) > 700) continue;
+      const i = 2 + Math.floor(Math.random() * (cave.bottom.length - 4));
+      const x = cave.x0 + i * 24;
+      const floor = chunk.profile[i];
+      const gap = floor - cave.bottom[i];
+      if (gap < 30 || cave.bottom[i] - cave.top[i] < 10) continue;
+      state.particles.push({ kind: 'bubble', x, y: floor - 8, vx: 0, vy: -45, life: gap / 70, maxLife: gap / 70, size: 3 + Math.random() * 4 });
+    }
+  }
+
+  if (state.condition === 'storm' && state.camera.y < 60) {
+    for (let i = 0; i < 3 && state.particles.length < 90; i++) {
+      state.particles.push({ kind: 'rain', x: state.camera.x + (Math.random() - 0.5) * 1400, y: state.camera.y - 20, vx: -60, vy: 520, life: 1.2, maxLife: 1.2, size: 14 });
+    }
+  }
+
   if (state.currents.length > 0 && Math.random() < dt * 8) {
     for (const current of state.currents) {
       if (Math.abs(current.x0 - state.camera.x) > 900) continue;
+      if (current.lift < 0) {
+        state.particles.push({ kind: 'bubble', x: current.x0 + Math.random() * (current.x1 - current.x0), y: current.y1, vx: 0, vy: current.lift * 0.9, life: 2.4, maxLife: 2.4, size: 4 + Math.random() * 6 });
+        continue;
+      }
       state.particles.push({
         kind: 'streak',
         x: current.force > 0 ? current.x0 + Math.random() * 120 : current.x1 - Math.random() * 120,

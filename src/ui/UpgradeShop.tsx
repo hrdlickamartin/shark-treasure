@@ -1,6 +1,8 @@
+import { useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
-import { REGIONS } from '../game/regions';
-import { UPGRADES, upgradeCost, type UpgradeId, type UpgradeLevels } from '../progression/upgrades';
+import type { SkinId } from '../game/types';
+import { SKINS, skinned } from '../progression/skins';
+import { maxLevel, unlocked, UPGRADES, upgradeCost, type UpgradeId, type UpgradeLevels } from '../progression/upgrades';
 import { Icon } from '../render/Sprite';
 import { GameButton } from './Button';
 import { MoneyPill, Overlay, Panel, Title } from './Panel';
@@ -9,13 +11,18 @@ import { COLORS, FONTS } from './theme';
 interface Props {
   money: number;
   levels: UpgradeLevels;
+  expedition: number;
   onBuy: (id: UpgradeId) => void;
+  onBuySkin: (id: SkinId) => void;
+  skins: SkinId[];
+  skin: SkinId;
   onClose: () => void;
   width: number;
   height: number;
 }
 
-export function UpgradeShop({ money, levels, onBuy, onClose, width, height }: Props) {
+export function UpgradeShop({ money, levels, expedition, onBuy, onBuySkin, skins, skin, onClose, width, height }: Props) {
+  const [tab, setTab] = useState<'gear' | 'skins'>('gear');
   const columns = width > 900 ? 4 : width > 560 ? 2 : 1;
   const cardWidth = Math.min(220, (Math.min(width - 60, 960) - (columns - 1) * 10) / columns);
   return (
@@ -23,16 +30,43 @@ export function UpgradeShop({ money, levels, onBuy, onClose, width, height }: Pr
       <Panel style={[styles.panel, { maxHeight: height - 24, maxWidth: Math.min(width - 24, 980) }]}>
         <View style={styles.header}>
           <Title size={28}>Vylepšení</Title>
+          <View style={styles.tabs}>
+            <GameButton label="Vybavení" size="sm" variant={tab === 'gear' ? 'gold' : 'navy'} onPress={() => setTab('gear')} />
+            <GameButton label="Vzhled" size="sm" variant={tab === 'skins' ? 'gold' : 'navy'} icon={<Icon name="icon_brush" size={18} />} onPress={() => setTab('skins')} />
+          </View>
           <MoneyPill amount={money} />
         </View>
         <ScrollView style={{ flexGrow: 0, flexShrink: 1 }} contentContainerStyle={styles.grid} showsVerticalScrollIndicator={false}>
-          {UPGRADES.map((def) => {
+          {tab === 'skins' &&
+            SKINS.map((def) => {
+              const owned = skins.includes(def.id);
+              const active = skin === def.id;
+              return (
+                <View key={def.id} style={[styles.card, { width: cardWidth }, active && styles.activeCard]}>
+                  <View style={[styles.skinPreview, { backgroundColor: def.color }]}>
+                    <Icon name={skinned('diver_swim1', def.id)} size={cardWidth * 0.62} />
+                  </View>
+                  <Text style={styles.name}>{def.name}</Text>
+                  <GameButton
+                    label={active ? 'Vybráno' : owned ? 'Vybrat' : `${def.price.toLocaleString('cs-CZ')} $`}
+                    variant={active ? 'navy' : owned || money >= def.price ? 'green' : 'navy'}
+                    size="sm"
+                    disabled={active || (!owned && money < def.price)}
+                    silent
+                    onPress={() => onBuySkin(def.id)}
+                  />
+                </View>
+              );
+            })}
+          {tab === 'gear' && UPGRADES.map((def) => {
             const level = levels[def.id];
-            const maxed = level >= def.max;
+            const max = maxLevel(def, expedition);
+            const open = unlocked(def, expedition);
+            const maxed = level >= max;
             const cost = upgradeCost(def, level);
             const affordable = money >= cost;
             return (
-              <View key={def.id} style={[styles.card, { width: cardWidth }]}>
+              <View key={def.id} style={[styles.card, { width: cardWidth }, !open && styles.lockedCard]}>
                 <View style={styles.cardTop}>
                   <View style={styles.iconBox}>
                     <Icon name={def.icon} size={44} />
@@ -43,20 +77,20 @@ export function UpgradeShop({ money, levels, onBuy, onClose, width, height }: Pr
                   </View>
                 </View>
                 <View style={styles.levels}>
-                  {Array.from({ length: def.max }, (_, i) => (
-                    <View key={i} style={[styles.pip, i < level && styles.pipOn]} />
+                  {Array.from({ length: def.max + def.extra }, (_, i) => (
+                    <View key={i} style={[styles.pip, i < level && styles.pipOn, i >= max && styles.pipLocked]} />
                   ))}
                 </View>
                 <Text style={styles.effect}>
                   {def.effect(level)}
                   {!maxed ? `  →  ${def.effect(level + 1)}` : ''}
                 </Text>
-                {def.id === 'boat' && !maxed && <Text style={styles.unlock}>Odemkne: {REGIONS[level + 1].name}</Text>}
+                {open && maxed && max < def.max + def.extra && <Text style={styles.unlock}>Další úroveň na příští výpravě</Text>}
                 <GameButton
-                  label={maxed ? 'MAX' : `${cost.toLocaleString('cs-CZ')} $`}
-                  variant={maxed ? 'navy' : affordable ? 'green' : 'navy'}
+                  label={!open ? `Od ${(def.unlockAt ?? 0) + 1}. výpravy` : maxed ? 'MAX' : `${cost.toLocaleString('cs-CZ')} $`}
+                  variant={open && !maxed && affordable ? 'green' : 'navy'}
                   size="sm"
-                  disabled={maxed || !affordable}
+                  disabled={!open || maxed || !affordable}
                   silent
                   onPress={() => onBuy(def.id)}
                 />
@@ -72,7 +106,10 @@ export function UpgradeShop({ money, levels, onBuy, onClose, width, height }: Pr
 
 const styles = StyleSheet.create({
   panel: { width: '100%', alignItems: 'stretch', gap: 10 },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 },
+  tabs: { flexDirection: 'row', gap: 6 },
+  activeCard: { borderColor: COLORS.gold },
+  skinPreview: { height: 86, borderRadius: 10, alignItems: 'center', justifyContent: 'center', opacity: 0.95 },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, justifyContent: 'center', paddingBottom: 4 },
   card: { backgroundColor: COLORS.panelLight, borderRadius: 14, padding: 10, gap: 6, borderWidth: 2, borderColor: '#2A7BD6' },
   cardTop: { flexDirection: 'row', gap: 8, alignItems: 'center' },
@@ -83,6 +120,8 @@ const styles = StyleSheet.create({
   levels: { flexDirection: 'row', gap: 4 },
   pip: { flex: 1, height: 7, borderRadius: 4, backgroundColor: 'rgba(2, 16, 40, 0.6)' },
   pipOn: { backgroundColor: COLORS.gold },
+  pipLocked: { opacity: 0.25 },
+  lockedCard: { opacity: 0.6 },
   effect: { color: COLORS.white, fontFamily: FONTS.body, fontSize: 11 },
   unlock: { color: COLORS.aqua, fontFamily: FONTS.bodyHeavy, fontSize: 11 },
   back: { alignSelf: 'center' },

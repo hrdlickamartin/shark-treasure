@@ -1,9 +1,14 @@
 import { memo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { CHESTS } from '../game/catalog';
+import { CHALLENGES, CONDITIONS } from '../game/modifiers';
+import { greedMultiplier } from '../game/systems/dive';
 import { MAX_HEALTH, PX_PER_M } from '../game/constants';
+import { oceanOf } from '../game/oceans';
 import { regionAt } from '../game/regions';
-import type { GameState } from '../game/types';
+import { objectiveProps } from '../game/systems/props';
+import type { GameState, Prop } from '../game/types';
+import type { SpriteName } from '../render/spriteAssets';
 import { Icon } from '../render/Sprite';
 import { MoneyPill } from './Panel';
 import { TouchAction } from './TouchAction';
@@ -16,7 +21,35 @@ interface Props {
   topInset: number;
   leftInset: number;
   rightInset: number;
+  markers: boolean;
   onPause: () => void;
+}
+
+export function propIcon(prop: Prop): SpriteName {
+  if (prop.kind === 'artifact') return prop.sprite ?? 'map_fragment';
+  if (prop.kind === 'survivor') return 'diver_hurt';
+  if (prop.kind === 'lever') return 'lever';
+  if (prop.kind === 'node') return 'energy_node';
+  if (prop.kind === 'echo') return prop.sprite ?? 'icon_sonar';
+  if (prop.kind === 'vault') return 'chest_legendary';
+  return 'map_fragment';
+}
+
+function nearestObjective(state: GameState): { d: number; a: number; icon: SpriteName; color: string } | null {
+  const { diver } = state;
+  let best: { d: number; a: number; icon: SpriteName; color: string } | null = null;
+  for (const p of objectiveProps(state)) {
+    const d = Math.hypot(p.x - diver.x, p.y - diver.y);
+    if (best && best.d < d) continue;
+    best = { d, a: (Math.atan2(p.y - diver.y, p.x - diver.x) * 180) / Math.PI, icon: propIcon(p), color: '#F7C6E0' };
+  }
+  for (const c of state.chests) {
+    if (!c.id.startsWith('evt:')) continue;
+    const d = Math.hypot(c.x - diver.x, c.y - diver.y);
+    if (best && best.d < d) continue;
+    best = { d, a: (Math.atan2(c.y - diver.y, c.x - diver.x) * 180) / Math.PI, icon: 'chest_mystery', color: COLORS.aqua };
+  }
+  return best;
 }
 
 function Bar({ value, color, width, blink }: { value: number; color: string; width: number; blink?: boolean }) {
@@ -28,15 +61,16 @@ function Bar({ value, color, width, blink }: { value: number; color: string; wid
   );
 }
 
-export function HUD({ state, narrow, money, topInset, leftInset, rightInset, onPause }: Props) {
+export function HUD({ state, narrow, money, topInset, leftInset, rightInset, markers, onPause }: Props) {
   const { diver, stats, time, boat } = state;
   const diving = state.phase === 'dive';
   const oxygenPct = diver.oxygen / stats.oxygenMax;
   const low = oxygenPct < 0.25;
   const blink = low && Math.floor(time * 4) % 2 === 0;
   const depth = Math.max(0, Math.round(diver.y / PX_PER_M));
-  const region = regionAt(diving ? diver.x : boat.x);
+  const region = regionAt(oceanOf(state).regions, diving ? diver.x : boat.x);
   const carriedValue = diver.carried.reduce((s, c) => s + c.value, 0) + diver.coins;
+  const multiplier = greedMultiplier(diver.carried.length + state.balloons.filter((b) => b.surfaced).length);
   const dx = boat.x - diver.x;
   const dy = -diver.y;
   const angle = (Math.atan2(dy, dx) * 180) / Math.PI;
@@ -49,10 +83,16 @@ export function HUD({ state, narrow, money, topInset, leftInset, rightInset, onP
       }, null)
     : null;
 
+  const objective = diving && markers ? nearestObjective(state) : null;
+  const target = objective ?? (nearest ? { ...nearest, icon: 'chest_common' as SpriteName, color: COLORS.gold } : null);
+  const ocean = oceanOf(state);
+  const pressure = diving && state.mode === 'sea' ? depth - stats.safeDepth : -999;
+  const cargoProps = diver.cargo.map((id) => state.props.find((p) => p.id === id)).filter((p): p is Prop => !!p);
+
   const centerBlock = (
         <View style={styles.center} pointerEvents="none">
           <View style={styles.depthPill}>
-            <Text style={styles.depthText}>{diving ? `Hloubka: ${depth} m` : region.name}</Text>
+            <Text style={styles.depthText}>{diving ? `Hloubka: ${depth} m` : state.mode === 'endless' ? 'Hlubinný ponor' : region.name}</Text>
           </View>
           {diving ? (
             <View style={styles.compass}>
@@ -61,18 +101,44 @@ export function HUD({ state, narrow, money, topInset, leftInset, rightInset, onP
               </View>
               <Icon name="boat" size={26} />
               <Text style={styles.compassText}>{distance} m</Text>
-              {nearest && (
+              {target && (
                 <>
-                  <View style={[styles.arrowWrap, { transform: [{ rotate: `${nearest.a}deg` }] }]}>
-                    <View style={[styles.arrow, { borderLeftColor: COLORS.gold }]} />
+                  <View style={[styles.arrowWrap, { transform: [{ rotate: `${target.a}deg` }] }]}>
+                    <View style={[styles.arrow, { borderLeftColor: target.color }]} />
                   </View>
-                  <Icon name="chest_common" size={20} />
-                  <Text style={styles.compassText}>{Math.round(nearest.d / PX_PER_M)} m</Text>
+                  <Icon name={target.icon} size={22} />
+                  <Text style={styles.compassText}>{Math.round(target.d / PX_PER_M)} m</Text>
                 </>
               )}
             </View>
           ) : (
-            <Text style={styles.regionSub}>{region.subtitle}</Text>
+            <Text style={styles.regionSub}>{state.mode === 'endless' ? `Rekord ${state.shaftBest} m` : region.subtitle}</Text>
+          )}
+          {diving && state.mode === 'sea' && <Minimap state={state} />}
+          {diving && state.mode === 'endless' && <Text style={styles.regionSub}>Rekord {Math.max(state.shaftBest, Math.floor(state.record.maxDepth / PX_PER_M))} m</Text>}
+          {(state.condition !== 'normal' || state.challenge) && (
+            <View style={styles.chips}>
+              {state.condition !== 'normal' && (
+                <View style={[styles.chip, { borderColor: COLORS.purple }]}>
+                  <Text style={styles.chipText}>{CONDITIONS[state.condition].name}</Text>
+                </View>
+              )}
+              {state.challenge && (
+                <View style={[styles.chip, { borderColor: COLORS.gold }]}>
+                  <Text style={styles.chipText}>Výzva: {CHALLENGES[state.challenge].name}</Text>
+                </View>
+              )}
+            </View>
+          )}
+          {pressure > -15 && (
+            <View style={[styles.chip, { borderColor: pressure > 0 ? COLORS.coral : COLORS.orange }]}>
+              <Text style={styles.chipText}>{pressure > 0 ? `TLAK! Bezpečně jen do ${stats.safeDepth} m` : `Blížíš se limitu ${stats.safeDepth} m`}</Text>
+            </View>
+          )}
+          {diving && (diver.breathing || diver.inAir || diver.atSub) && (
+            <View style={[styles.chip, { borderColor: COLORS.aqua }]}>
+              <Text style={styles.chipText}>{diver.atSub ? 'Ponorka – doplňuješ kyslík' : diver.inAir ? 'Vzduchová kapsa – doplňuješ kyslík' : 'Dýcháš u hladiny'}</Text>
+            </View>
           )}
         </View>
   );
@@ -91,6 +157,13 @@ export function HUD({ state, narrow, money, topInset, leftInset, rightInset, onP
             <Bar value={oxygenPct} color={low ? '#FF4D67' : COLORS.aqua} width={narrow ? 90 : 130} blink={blink} />
             <Text style={[styles.statText, low && { color: COLORS.coral }]}>{Math.round(oxygenPct * 100)} %</Text>
           </View>
+          {ocean.temperature && state.mode === 'sea' && diving && (
+            <View style={styles.stat}>
+              <Icon name="icon_thermal" size={24} />
+              <Bar value={diver.temp / 100} color={ocean.temperature === 'cold' ? '#8FD8FF' : COLORS.orange} width={narrow ? 90 : 130} blink={diver.temp < 25 && Math.floor(time * 4) % 2 === 0} />
+              <Text style={[styles.statText, diver.temp < 25 && { color: COLORS.coral }]}>{Math.round(diver.temp)} %</Text>
+            </View>
+          )}
         </View>
 
         {!narrow && centerBlock}
@@ -106,9 +179,9 @@ export function HUD({ state, narrow, money, topInset, leftInset, rightInset, onP
       </View>
 
       {narrow && <View style={styles.narrowCenter} pointerEvents="none">{centerBlock}</View>}
-      {diving && (diver.carried.length > 0 || diver.coins > 0) && (
+      {diving && (diver.carried.length > 0 || diver.coins > 0 || cargoProps.length > 0) && (
         <View style={[styles.carried, { opacity: 0.75 + Math.sin(time * 5) * 0.25 }]} pointerEvents="none">
-          <View style={styles.chestRow}>
+          {state.mode === 'sea' && <View style={styles.chestRow}>
             {Array.from({ length: stats.capacity }, (_, i) => {
               const c = diver.carried[i];
               return (
@@ -117,8 +190,14 @@ export function HUD({ state, narrow, money, topInset, leftInset, rightInset, onP
                 </View>
               );
             })}
-          </View>
-          <Text style={styles.carriedText}>+{carriedValue} $ nedoručeno</Text>
+            {cargoProps.map((p) => (
+              <View key={p.id} style={[styles.slot, { borderColor: '#F7C6E0' }]}>
+                <Icon name={propIcon(p)} size={26} />
+              </View>
+            ))}
+          </View>}
+          <Text style={styles.carriedText}>+{carriedValue} $ {state.mode === 'endless' ? 'sebráno' : 'nedoručeno'}</Text>
+          {multiplier > 1 && <Text style={styles.multiText}>×{multiplier.toLocaleString('cs-CZ')} při doručení</Text>}
         </View>
       )}
     </View>
@@ -169,6 +248,13 @@ const styles = StyleSheet.create({
   carried: { marginTop: 8, alignSelf: 'flex-start', backgroundColor: 'rgba(8, 43, 89, 0.75)', borderRadius: 12, padding: 6, borderWidth: 2, borderColor: COLORS.gold },
   chestRow: { flexDirection: 'row', gap: 4 },
   slot: { width: 32, height: 32, borderRadius: 8, borderWidth: 2, borderColor: 'rgba(255,255,255,0.25)', alignItems: 'center', justifyContent: 'center' },
+  multiText: { color: COLORS.seaweed, fontFamily: FONTS.title, fontSize: 13, ...textShadow },
+  chips: { flexDirection: 'row', gap: 4, flexWrap: 'wrap', justifyContent: 'center' },
+  chip: { backgroundColor: 'rgba(8, 43, 89, 0.8)', borderRadius: 10, paddingHorizontal: 8, paddingVertical: 2, borderWidth: 1.5 },
+  chipText: { color: COLORS.white, fontFamily: FONTS.bodyHeavy, fontSize: 11 },
+  minimap: { width: 180, height: 16, borderRadius: 8, backgroundColor: 'rgba(8, 43, 89, 0.75)', borderWidth: 1.5, borderColor: 'rgba(42, 123, 214, 0.9)', overflow: 'hidden' },
+  miniDot: { position: 'absolute', top: 4, width: 6, height: 6, borderRadius: 3 },
+  miniCave: { position: 'absolute', top: 2, height: 10, borderRadius: 3, backgroundColor: 'rgba(160, 175, 200, 0.6)' },
   carriedText: { color: COLORS.gold, fontFamily: FONTS.title, fontSize: 13, marginTop: 3, ...textShadow },
 });
 
@@ -178,3 +264,30 @@ export const ThrottledHUD = memo(
   },
   (a, b) => a.tick === b.tick && a.money === b.money && a.narrow === b.narrow && a.topInset === b.topInset && a.leftInset === b.leftInset,
 );
+
+const MINI_RANGE = 2600;
+
+function Minimap({ state }: { state: GameState }) {
+  const center = state.boat.x;
+  const width = 180;
+  const toX = (x: number) => ((x - center) / MINI_RANGE / 2 + 0.5) * width;
+  const inRange = (x: number) => Math.abs(x - center) < MINI_RANGE;
+  const caves = [...state.chunks.values()].filter((c) => c.cave && inRange(c.x0 + 240));
+  return (
+    <View style={styles.minimap}>
+      {caves.map((c) => (
+        <View key={c.index} style={[styles.miniCave, { left: toX(c.cave!.x0), width: Math.max(4, (480 / MINI_RANGE / 2) * width) }]} />
+      ))}
+      {state.chests
+        .filter((c) => state.seenChests.includes(c.id) && inRange(c.x))
+        .map((c) => (
+          <View key={c.id} style={[styles.miniDot, { left: toX(c.x) - 3, backgroundColor: c.boss ? COLORS.coral : COLORS.gold }]} />
+        ))}
+      {state.balloons.filter((b) => inRange(b.x)).map((b) => (
+        <View key={b.id} style={[styles.miniDot, { left: toX(b.x) - 3, backgroundColor: COLORS.orange }]} />
+      ))}
+      <View style={[styles.miniDot, { left: width / 2 - 4, width: 8, height: 8, top: 3, backgroundColor: COLORS.white }]} />
+      {inRange(state.diver.x) && <View style={[styles.miniDot, { left: toX(state.diver.x) - 4, width: 8, height: 8, top: 3, backgroundColor: COLORS.aqua }]} />}
+    </View>
+  );
+}

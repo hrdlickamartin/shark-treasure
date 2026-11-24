@@ -1,6 +1,14 @@
 import { useEffect, useState } from 'react';
 import { Animated, Easing, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { CHESTS } from '../game/catalog';
+import { CHALLENGES, CONDITIONS } from '../game/modifiers';
+import { RELICS } from '../progression/relics';
+import { OCEANS } from '../game/oceans';
+import { speciesById } from '../progression/encyclopedia';
+import { CHARACTERS } from '../progression/characters';
+import { radioLine } from '../progression/dialogue';
+import { SpeakerLine } from './Dialogue';
+import { pearlLabel } from '../progression/story';
 import type { DamageSource } from '../game/types';
 import type { ResultSummary } from '../progression/useProgress';
 import { Icon } from '../render/Sprite';
@@ -14,6 +22,18 @@ const REASONS: Record<DamageSource, string> = {
   mine: 'Narazil jsi na podvodní minu.',
   jelly: 'Popálila tě medúza.',
   urchin: 'Pobodal tě mořský ježek.',
+  eel: 'Kousla tě muréna.',
+  debris: 'Zasáhly tě trosky vraku.',
+  crab: 'Štípl tě krab.',
+  mega: 'Dostal tě obří predátor!',
+  pressure: 'Tlak hlubin byl na tvůj oblek příliš silný.',
+  cold: 'Podchladil ses v ledové vodě.',
+  heat: 'Přehřál ses u lávových průduchů.',
+  guardian: 'Strážce Atlantidy tě nepustil dál.',
+  angler: 'Kousl tě ďas.',
+  ray: 'Zasáhl tě výboj elektrického rejnoka.',
+  toxic: 'Otrávil tě toxický mrak.',
+  spikes: 'Napíchl ses na ostnatou past.',
 };
 
 interface Props {
@@ -48,7 +68,9 @@ function Row({ label, value, color = COLORS.white }: { label: string; value: str
 
 export function DiveSummary({ summary, onContinue, onShop, maxHeight }: Props) {
   const { result, missions, missionReward } = summary;
-  const total = useCountUp(result.total + missionReward);
+  const endless = result.mode === 'endless';
+  const paid = result.success || endless;
+  const total = useCountUp(result.total + missionReward + summary.questReward + summary.levelReward);
   const [pop] = useState(() => new Animated.Value(0));
   const [bob] = useState(() => new Animated.Value(0));
 
@@ -69,19 +91,28 @@ export function DiveSummary({ summary, onContinue, onShop, maxHeight }: Props) {
       <Animated.View style={{ transform: [{ scale: pop }], maxHeight: maxHeight - 24, width: '100%', maxWidth: 460 }}>
         <Panel style={[styles.panel, { maxHeight: maxHeight - 24 }]}>
           <ScrollView style={styles.scroll} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-            <View style={[styles.banner, { backgroundColor: result.success ? COLORS.gold : COLORS.coral }]}>
-              <Text style={[styles.bannerText, { color: result.success ? COLORS.navy : COLORS.white }]}>
-                {result.success ? 'PONOR ÚSPĚŠNÝ!' : 'PONOR NEÚSPĚŠNÝ'}
+            <View style={[styles.banner, { backgroundColor: endless ? COLORS.aqua : result.success ? COLORS.gold : COLORS.coral }]}>
+              <Text style={[styles.bannerText, { color: result.success || endless ? COLORS.navy : COLORS.white }]}>
+                {endless ? `PROPAST – ${result.maxDepthM} m` : result.success ? 'PONOR ÚSPĚŠNÝ!' : 'PONOR NEÚSPĚŠNÝ'}
               </Text>
             </View>
             <Animated.View style={{ transform: [{ translateY }] }}>
-              <Icon name={result.success ? 'chest_open' : 'diver_hurt'} size={maxHeight < 560 ? 64 : result.success ? 110 : 96} />
+              <Icon name={paid ? 'chest_open' : 'diver_hurt'} size={maxHeight < 560 ? 64 : paid ? 110 : 96} />
             </Animated.View>
-            {result.success ? (
+            {endless ? (
               <>
                 <Title color={COLORS.gold} size={40}>
                   +{total.toLocaleString('cs-CZ')} $
                 </Title>
+                {summary.shaftRecord && <Text style={styles.boss}>Nový rekord!</Text>}
+                {!result.success && <Text style={styles.reason}>{REASONS[result.reason ?? 'oxygen']}</Text>}
+              </>
+            ) : result.success ? (
+              <>
+                <Title color={COLORS.gold} size={40}>
+                  +{total.toLocaleString('cs-CZ')} $
+                </Title>
+                {result.bossLoot && <Text style={styles.boss}>Ukradl jsi poklad Megalodona!</Text>}
                 <Text style={styles.sub}>Poklad bezpečně doručen</Text>
               </>
             ) : (
@@ -90,23 +121,60 @@ export function DiveSummary({ summary, onContinue, onShop, maxHeight }: Props) {
                 <Text style={styles.sub}>Záchranáři tě vytáhli na loď. Peníze ani vylepšení neztrácíš.</Text>
               </>
             )}
+            <SpeakerLine line={radioLine(paid ? 'success' : 'fail', result.duration * 7) ?? { who: 'maya', text: '' }} compact />
+            {summary.quests.map((q) => (
+              <View key={q.id} style={styles.story}>
+                <Icon name={CHARACTERS[q.giver].portrait} size={44} />
+                <View style={styles.relicInfo}>
+                  <Text style={styles.storyTitle}>{q.chapterEnd ? `Kapitola dokončena: ${q.title}` : `Splněno: ${q.title}`}</Text>
+                  <Text style={styles.storyText}>
+                    +{q.reward.money.toLocaleString('cs-CZ')} $ • +{q.reward.research} dat{q.reward.pearls > 0 ? ` • +${pearlLabel(q.reward.pearls)}` : ''}
+                    {q.reward.upgrade ? ` • ${q.reward.upgrade.label}` : ''}
+                  </Text>
+                </View>
+              </View>
+            ))}
+            {summary.unlocked.length > 0 && <Text style={styles.boss}>Nový oceán na mapě: {summary.unlocked.map((o) => OCEANS[o].czech).join(', ')}</Text>}
+            <View style={styles.progressRow}>
+              <Text style={styles.progressText}>+{summary.xp} XP</Text>
+              {summary.research > 0 && <Text style={styles.progressText}>+{summary.research} výzkumných dat</Text>}
+              {summary.photos.length > 0 && <Text style={styles.progressText}>Katalog: {summary.photos.map((id) => speciesById(id)?.name ?? id).join(', ')}</Text>}
+            </View>
+            {summary.levelUps.length > 0 && <Text style={styles.boss}>Úroveň průzkumníka {summary.levelUps[summary.levelUps.length - 1]}! +{summary.levelReward.toLocaleString('cs-CZ')} $</Text>}
             <View style={styles.table}>
-              {result.success ? (
+              {endless ? (
+                <>
+                  <Row label="Hloubka" value={`${result.maxDepthM} m`} color={COLORS.aqua} />
+                  <Row label="Sebrané mince" value={`${result.coins} $`} color={COLORS.gold} />
+                  <Row label="Bonus za hloubku" value={`+${result.depthBonus} $`} color={COLORS.seaweed} />
+                  {summary.shaftPearls > 0 && <Row label="Perly za rekord" value={`+${summary.shaftPearls}`} color="#F7C6E0" />}
+                  <Row label="Zásahy" value={String(result.hits)} />
+                </>
+              ) : result.success ? (
                 <>
                   <Row label="Získané truhlice" value={String(result.chests.length)} />
+                  {result.banked.length > 0 && <Row label="Z toho balónem" value={String(result.banked.length)} color={COLORS.orange} />}
                   <Row label="Hodnota truhlic" value={`${result.chestValue} $`} color={COLORS.gold} />
+                  {result.greedBonus > 0 && <Row label={`Násobič ×${result.multiplier.toLocaleString('cs-CZ')}`} value={`+${result.greedBonus} $`} color={COLORS.seaweed} />}
+                  {result.conditionBonus > 0 && <Row label={CONDITIONS[result.condition].name} value={`+${result.conditionBonus} $`} color={COLORS.seaweed} />}
+                  {result.relicBonus > 0 && <Row label="Bonus relikvií" value={`+${result.relicBonus} $`} color={COLORS.seaweed} />}
+                  {result.rescueBonus > 0 && <Row label="Odměna za záchranu" value={`+${result.rescueBonus} $`} color={COLORS.seaweed} />}
+                  {result.expeditionBonus > 0 && <Row label="Bonus výpravy" value={`+${result.expeditionBonus} $`} color={COLORS.seaweed} />}
                   <Row label="Sebrané mince" value={`${result.coins} $`} color={COLORS.gold} />
                   <Row label={`Bonus za hloubku (${result.maxDepthM} m)`} value={`+${result.depthBonus} $`} color={COLORS.seaweed} />
                   {result.noHitBonus > 0 && <Row label="Bez zásahu" value={`+${result.noHitBonus} $`} color={COLORS.seaweed} />}
+                  {result.challengeBonus > 0 && result.challenge && <Row label={`Výzva: ${CHALLENGES[result.challenge].name}`} value={`+${result.challengeBonus} $`} color={COLORS.gold} />}
                 </>
               ) : (
                 <>
                   <Row label="Ztracený poklad" value={result.lostValue > 0 ? `-${result.lostValue} $` : '0 $'} color={COLORS.coral} />
+                  {result.insured > 0 && <Row label="Vyplaceno pojištění" value={`+${result.insured} $`} color={COLORS.aqua} />}
+                  {result.banked.length > 0 && <Row label="Zachráněno balónem" value={`+${result.total - result.insured} $`} color={COLORS.orange} />}
                   <Row label="Maximální hloubka" value={`${result.maxDepthM} m`} />
                   <Row label="Zásahy" value={String(result.hits)} />
                 </>
               )}
-              {result.chests.length > 0 && result.success && (
+              {result.chests.length > 0 && result.success && !endless && (
                 <View style={styles.chests}>
                   {result.chests.map((c) => (
                     <Icon key={c.id} name={CHESTS[c.kind].sprite} size={34} />
@@ -114,11 +182,29 @@ export function DiveSummary({ summary, onContinue, onShop, maxHeight }: Props) {
                 </View>
               )}
             </View>
+            {result.bankedLost > 0 && <Text style={styles.sub}>{result.bankedLost}× balón odplul moc daleko od lodi.</Text>}
+            {summary.newRelics.length > 0 && (
+              <View style={styles.relics}>
+                <Text style={styles.relicTitle}>Nová relikvie!</Text>
+                {summary.newRelics.map((id) => {
+                  const relic = RELICS.find((r) => r.id === id)!;
+                  return (
+                    <View key={id} style={styles.relicRow}>
+                      <Icon name={relic.sprite} size={40} />
+                      <View style={styles.relicInfo}>
+                        <Text style={styles.relicName}>{relic.name}</Text>
+                        <Text style={styles.sub}>{relic.description}</Text>
+                      </View>
+                    </View>
+                  );
+                })}
+              </View>
+            )}
             {missions.length > 0 && (
               <View style={styles.missions}>
                 <Text style={styles.missionTitle}>Splněné mise</Text>
                 {missions.map((m) => (
-                  <Row key={m.id} label={`✓ ${m.title}`} value={`+${m.reward} $`} color={COLORS.gold} />
+                  <Row key={m.id} label={`✓ ${m.title}`} value={`+${Math.round(m.reward * summary.missionScale)} $`} color={COLORS.gold} />
                 ))}
               </View>
             )}
@@ -134,6 +220,11 @@ export function DiveSummary({ summary, onContinue, onShop, maxHeight }: Props) {
 }
 
 const styles = StyleSheet.create({
+  progressRow: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 8 },
+  progressText: { color: COLORS.aqua, fontFamily: FONTS.bodyHeavy, fontSize: 12 },
+  story: { flexDirection: 'row', gap: 10, alignItems: 'center', backgroundColor: 'rgba(255, 191, 50, 0.15)', borderRadius: 12, padding: 10, borderWidth: 1.5, borderColor: COLORS.gold },
+  storyTitle: { color: COLORS.gold, fontFamily: FONTS.title, fontSize: 15 },
+  storyText: { color: COLORS.white, fontFamily: FONTS.body, fontSize: 12 },
   panel: { padding: 0, overflow: 'hidden', flexShrink: 1 },
   scroll: { flexGrow: 0, flexShrink: 1 },
   content: { alignItems: 'center', gap: 8, padding: 16, paddingBottom: 6 },
@@ -146,6 +237,12 @@ const styles = StyleSheet.create({
   rowLabel: { color: COLORS.white, fontFamily: FONTS.body, fontSize: 14, flexShrink: 1 },
   rowValue: { fontFamily: FONTS.title, fontSize: 15 },
   chests: { flexDirection: 'row', gap: 6, justifyContent: 'center', marginTop: 4 },
+  boss: { color: COLORS.coral, fontFamily: FONTS.title, fontSize: 18, ...textShadow },
+  relics: { alignSelf: 'stretch', backgroundColor: 'rgba(173, 101, 245, 0.18)', borderRadius: 12, padding: 10, gap: 6, borderWidth: 1.5, borderColor: COLORS.purple },
+  relicTitle: { color: COLORS.purple, fontFamily: FONTS.title, fontSize: 16 },
+  relicRow: { flexDirection: 'row', gap: 10, alignItems: 'center' },
+  relicInfo: { flex: 1 },
+  relicName: { color: COLORS.white, fontFamily: FONTS.title, fontSize: 14 },
   missions: { alignSelf: 'stretch', backgroundColor: 'rgba(255, 191, 50, 0.12)', borderRadius: 12, padding: 10, gap: 4, borderWidth: 1.5, borderColor: COLORS.gold },
   missionTitle: { color: COLORS.gold, fontFamily: FONTS.title, fontSize: 15 },
   buttons: { flexDirection: 'row', gap: 10, justifyContent: 'center', padding: 12, paddingTop: 6 },

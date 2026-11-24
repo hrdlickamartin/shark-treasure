@@ -14,11 +14,13 @@ interface Props {
   lightY: number;
   light: number;
   lowOxygen: number;
+  extra: number;
+  fog: number;
 }
 
-export function Darkness({ width, height, depthPx, lightX, lightY, light, lowOxygen }: Props) {
-  const dark = clamp((depthPx / PX_PER_M - 35) / 110, 0, 0.82);
-  if (dark <= 0.01 && lowOxygen <= 0) return null;
+export function Darkness({ width, height, depthPx, lightX, lightY, light, lowOxygen, extra, fog }: Props) {
+  const dark = clamp((depthPx / PX_PER_M - 35) / 110 + extra, 0, 0.86);
+  if (dark <= 0.01 && lowOxygen <= 0 && fog <= 0) return null;
   const radius = (light > 0 ? 120 + light * 75 : 150) * 2.4;
   const holeOpacity = light > 0 ? dark : dark * 0.45;
   const base = light > 0 ? 0 : dark * 0.55;
@@ -27,6 +29,7 @@ export function Darkness({ width, height, depthPx, lightX, lightY, light, lowOxy
   const size = radius * 2;
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents="none">
+      {fog > 0 && <View style={[StyleSheet.absoluteFill, styles.fog, { opacity: fog }]} />}
       {dark > 0.01 && (
         <>
           {base > 0 && <View style={[StyleSheet.absoluteFill, { backgroundColor: NAVY, opacity: base }]} />}
@@ -44,4 +47,5 @@ export function Darkness({ width, height, depthPx, lightX, lightY, light, lowOxy
 
 const styles = StyleSheet.create({
   fill: { position: 'absolute', backgroundColor: NAVY },
+  fog: { backgroundColor: '#D8ECF7' },
 });

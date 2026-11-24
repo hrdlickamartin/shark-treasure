@@ -5,7 +5,7 @@ import { burst, floatText, haptic, sfx, shake } from './effects';
 export function damageDiver(state: GameState, amount: number, source: DamageSource, fromX: number, fromY: number, dropChest: boolean) {
   const { diver, stats } = state;
   if (diver.invuln > 0 || diver.state !== 'diving') return false;
-  const dealt = amount * (1 - stats.armor);
+  const dealt = amount * stats.danger * (1 - stats.armor);
   diver.health -= dealt;
   diver.oxygen = Math.max(0, diver.oxygen - (source === 'shark' ? 5 : 3));
   diver.invuln = 1.4;
@@ -36,6 +36,10 @@ export function damageDiver(state: GameState, amount: number, source: DamageSour
       vy: 20,
       phase: 0,
       pickupDelay: 1.8,
+      boss: lost.boss,
+      inCave: false,
+      relic: lost.relic,
+      rolled: true,
     });
     floatText(state, `Ztratil jsi ${CHESTS[lost.kind].name.toLowerCase()}!`, diver.x, diver.y - 64, '#FF7185');
     sfx(state, 'drop');

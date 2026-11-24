@@ -19,15 +19,15 @@ interface Props {
   variant?: Variant;
   icon?: ReactNode;
   disabled?: boolean;
-  size?: 'sm' | 'md' | 'lg';
+  size?: 'xs' | 'sm' | 'md' | 'lg';
   style?: StyleProp<ViewStyle>;
   silent?: boolean;
 }
 
 export function GameButton({ label, onPress, variant = 'green', icon, disabled, size = 'md', style, silent }: Props) {
   const colors = VARIANTS[variant];
-  const pad = size === 'lg' ? 16 : size === 'md' ? 11 : 7;
-  const font = size === 'lg' ? 26 : size === 'md' ? 19 : 15;
+  const pad = size === 'lg' ? 16 : size === 'md' ? 11 : size === 'sm' ? 7 : 6;
+  const font = size === 'lg' ? 26 : size === 'md' ? 19 : size === 'sm' ? 15 : 13;
   return (
     <Pressable
       disabled={disabled}

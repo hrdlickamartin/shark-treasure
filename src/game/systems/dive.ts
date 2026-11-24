@@ -1,30 +1,80 @@
 import { BOAT_DECK_Y, DOCK_DEPTH, DOCK_RADIUS_X, MAX_HEALTH, PX_PER_M } from '../constants';
+import { oceanOf } from '../oceans';
 import { regionIndexAt } from '../regions';
+import { CHALLENGES, CONDITIONS } from '../modifiers';
 import type { DiveResult, GameState } from '../types';
+import { BALLOON_HAUL_RANGE, submarineSpot } from './extras';
 import { bubble, burst, haptic, sfx } from './effects';
+
+export function greedMultiplier(count: number): number {
+  if (count >= 4) return 2;
+  if (count === 3) return 1.5;
+  if (count === 2) return 1.25;
+  return 1;
+}
 
 export function computeResult(state: GameState, success: boolean): DiveResult {
   const { diver, record, stats } = state;
-  const chestValue = diver.carried.reduce((sum, c) => sum + c.value, 0);
+  const banked = state.balloons.filter((b) => Math.abs(b.x - state.boat.x) < BALLOON_HAUL_RANGE).map((b) => b.chest);
+  const bankedLost = state.balloons.length - banked.length;
+  const endless = state.mode === 'endless';
+  const carried = success ? [...diver.carried] : [];
+  const delivered = [...carried, ...banked];
+  const chestValue = delivered.reduce((sum, c) => sum + c.value, 0);
   const maxDepthM = Math.round(record.maxDepth / PX_PER_M);
-  const depthBonus = success && maxDepthM >= 5 ? Math.round(maxDepthM * 3) : 0;
+  const multiplier = greedMultiplier(delivered.length);
+  const greedBonus = Math.round(chestValue * (multiplier - 1));
+  const conditionBonus = Math.round(chestValue * (CONDITIONS[state.condition].reward - 1));
+  const relicBonus = Math.round(chestValue * stats.moneyBonus);
+  const expeditionBonus = Math.round(chestValue * stats.lootBonus);
+  const depthBonus = endless ? Math.round(maxDepthM * 5 * (1 + stats.lootBonus)) : success && maxDepthM >= 5 ? Math.round(maxDepthM * 3) : 0;
   const noHitBonus = success && record.hits === 0 && chestValue > 0 ? Math.round(chestValue * 0.15) : 0;
-  const coins = diver.coins;
+  const coins = success || endless ? diver.coins : 0;
+  const lostValue = success || endless ? 0 : diver.carried.reduce((sum, c) => sum + c.value, 0) + diver.coins;
+  const insured = Math.round(lostValue * stats.insurance);
+  const rescueBonus = success ? state.props.filter((p) => p.kind === 'survivor' && !p.quest && diver.cargo.includes(p.id)).reduce((sum, p) => sum + p.value, 0) : 0;
+  const base = chestValue + greedBonus + conditionBonus + relicBonus + expeditionBonus + coins + depthBonus + noHitBonus + insured + rescueBonus;
+  const challengeBonus = success && state.challenge ? Math.round(base * (CHALLENGES[state.challenge].reward - 1)) : 0;
   return {
+    mode: state.mode,
+    ocean: state.ocean,
+    delivered: success ? [...diver.cargo] : [],
+    activated: [...record.activated],
+    photos: record.photos.map((p) => ({ ...p })),
+    cut: record.cut,
+    rescueBonus,
     success,
-    chests: [...diver.carried],
+    chests: delivered,
     coins,
     chestValue,
     depthBonus,
     noHitBonus,
-    total: success ? chestValue + coins + depthBonus + noHitBonus : 0,
+    total: base + challengeBonus,
     maxDepthM,
     hits: record.hits,
     reason: success ? null : state.lastDamage ?? 'oxygen',
-    lostValue: success ? 0 : chestValue + coins,
+    lostValue,
     oxygenLeftPct: Math.round((diver.oxygen / stats.oxygenMax) * 100),
     regionMax: record.regionMax,
     duration: state.time - record.startTime,
+    banked,
+    bankedLost,
+    multiplier,
+    greedBonus,
+    conditionBonus,
+    relicBonus,
+    expeditionBonus,
+    insured,
+    challengeBonus,
+    relics: delivered.map((c) => c.relic).filter((r): r is NonNullable<typeof r> => !!r),
+    condition: state.condition,
+    challenge: state.challenge,
+    pockets: record.pockets,
+    balloonsSent: record.balloonsSent,
+    bossLoot: delivered.some((c) => c.boss),
+    minX: record.minX,
+    maxX: record.maxX,
+    discoveries: [...record.discoveries],
   };
 }
 
@@ -46,10 +96,30 @@ export function startDive(state: GameState) {
   diver.invuln = 0;
   diver.hurt = 0;
   diver.stun = 0;
+  diver.balloons = stats.balloons;
+  diver.repellents = stats.repellents;
+  diver.medkits = stats.medkits;
+  diver.harpoons = stats.harpoons;
+  diver.atSub = false;
+  diver.cargo = [];
+  diver.temp = 100;
+  diver.medkits += state.supplies.medkit;
+  diver.balloons += state.supplies.balloon;
+  diver.harpoons += state.supplies.harpoon;
+  state.supplies = { medkit: 0, balloon: 0, harpoon: 0 };
+  state.sub = submarineSpot(state);
+  diver.breathing = true;
+  diver.inAir = false;
   boat.vx = 0;
+  state.balloons = [];
+  state.inkTime = 0;
+  state.repelTime = 0;
+  state.boostTime = 0;
+  state.boostCooldown = 0;
+  state.shaftMark = 0;
   state.lastDamage = null;
   state.alarmTimer = 0;
-  state.record = { startTime: state.time, maxDepth: 0, hits: 0, regionMax: regionIndexAt(diver.x), fullWarned: -10 };
+  state.record = { startTime: state.time, maxDepth: 0, hits: 0, regionMax: regionIndexAt(oceanOf(state).regions, diver.x), fullWarned: -10, pockets: 0, balloonsSent: 0, minX: diver.x, maxX: diver.x, discoveries: [], photos: [], activated: [], cut: 0 };
   state.sonarTime = 0;
   state.sonarCooldown = 0;
   for (let i = 0; i < 14; i++) {
@@ -57,6 +127,7 @@ export function startDive(state: GameState) {
   }
   burst(state, 'bubble', diver.x, 40, 10, 60, 1.4, 6);
   sfx(state, 'splash');
+  if (state.mode === 'sea') state.events.push({ type: 'radio', topic: 'dive_start' });
   haptic(state, 'light');
 }
 
@@ -78,7 +149,7 @@ export function updateDive(state: GameState, dt: number) {
 
   if (diver.state === 'diving') {
     record.maxDepth = Math.max(record.maxDepth, diver.y);
-    record.regionMax = Math.max(record.regionMax, regionIndexAt(diver.x));
+    record.regionMax = Math.max(record.regionMax, regionIndexAt(oceanOf(state).regions, diver.x));
     const atBoat = diver.y < DOCK_DEPTH && Math.abs(diver.x - boat.x) < DOCK_RADIUS_X && diver.stateTime > 1.2;
     if (atBoat) {
       diver.state = 'climbing';
@@ -165,7 +236,8 @@ function updateClimb(state: GameState, dt: number) {
 export function finishDive(state: GameState, success: boolean) {
   const { diver } = state;
   const result = computeResult(state, success);
-  const quick = success && result.chests.length === 0 && result.coins === 0 && result.duration < 5;
+  state.balloons = [];
+  const quick = success && result.chests.length === 0 && result.coins === 0 && result.delivered.length === 0 && result.activated.length === 0 && result.photos.length === 0 && result.duration < 5;
   diver.state = 'boat';
   diver.x = climbGeometry(state).deckX;
   diver.y = BOAT_DECK_Y;
