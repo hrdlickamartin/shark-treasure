@@ -1,6 +1,6 @@
 import { memo } from 'react';
 import { Animated, Image, StyleSheet, View } from 'react-native';
-import Svg, { Circle, Defs, Ellipse, LinearGradient, Path, Stop } from 'react-native-svg';
+import Svg, { Circle, ClipPath, Defs, Ellipse, G, LinearGradient, Mask, Path, Rect, Stop } from 'react-native-svg';
 import { CHUNK_W } from '../game/constants';
 import { hash, mulberry32 } from '../game/rng';
 import type { Chunk, DecorItem } from '../game/types';
@@ -145,7 +145,6 @@ const styles = StyleSheet.create({
   sparkle: { position: 'absolute', width: 5, height: 5, borderRadius: 3, backgroundColor: '#FFFFFF' },
 });
 
-const ROCK_STEP = 64;
 const WAVE = require('../../assets/fx/wave_front.png');
 const WAVE_W = 150;
 
@@ -165,7 +164,21 @@ interface RockColors {
   light: string;
 }
 
-const CAVE_COLORS: RockColors = { top: '#4669A8', mid: '#2F4F8C', bottom: '#1E3566', line: '#0A1F45', light: '#8FB4E8' };
+const CAVE_SHADE = '#04162F';
+
+type Point = [number, number];
+
+function smoothPath(pts: Point[]): string {
+  const f = (v: number) => v.toFixed(1);
+  let d = `M${f(pts[0][0])},${f(pts[0][1])}`;
+  for (let i = 1; i < pts.length - 1; i++) {
+    const [x, y] = pts[i];
+    const [nx, ny] = pts[i + 1];
+    d += ` Q${f(x)},${f(y)} ${f((x + nx) / 2)},${f((y + ny) / 2)}`;
+  }
+  const [lx, ly] = pts[pts.length - 1];
+  return `${d} L${f(lx)},${f(ly)}`;
+}
 
 const POCKET_STEPS = 14;
 const bubbleRise = [0, 1, 2].map((i) => glowClock.interpolate({ inputRange: [0, 1], outputRange: [0, -(26 + i * 8)] }));
@@ -240,67 +253,104 @@ function AnimatedSprite({ name, left, top, width, rotate, origin, opacity }: { n
 export const CaveRock = memo(function CaveRock({ chunk }: { chunk: Chunk }) {
   const cave = chunk.cave;
   if (!cave) return null;
-  const minTop = Math.min(...cave.top) - 6;
-  const maxBottom = Math.max(...cave.bottom) + 6;
-  const height = maxBottom - minTop;
+  const sand = chunk.palette;
   const solid = cave.top.map((t, i) => cave.bottom[i] - t > 8);
-  const first = Math.max(0, solid.indexOf(true));
-  const last = Math.max(first, solid.lastIndexOf(true));
-  const span = cave.top.slice(first, last + 1).map((_, k) => first + k);
-  const topPts = span.map((i) => `${i * PROFILE_STEP},${(cave.top[i] - minTop).toFixed(1)}`);
-  const bottomPts = span.map((i) => `${i * PROFILE_STEP},${(cave.bottom[i] - minTop).toFixed(1)}`).reverse();
-  const rock = `M${topPts.join(' L')} L${bottomPts.join(' L')} Z`;
+  const first = Math.max(0, solid.indexOf(true) - 1);
+  const last = Math.min(cave.top.length - 1, Math.max(first, solid.lastIndexOf(true) + 1));
+  const span = Array.from({ length: last - first + 1 }, (_, k) => first + k);
+  const floorAt = (i: number) => chunk.profile[Math.min(chunk.profile.length - 1, i)];
+  const svgTop = Math.min(...cave.top) - 12;
+  const height = Math.max(...span.map(floorAt)) + 4 - svgTop;
+  const px = (i: number) => i * PROFILE_STEP;
+  const py = (y: number) => y - svgTop;
+  const topPts = span.map((i): Point => [px(i), py(cave.top[i])]);
+  const underPts = span.map((i): Point => [px(i), py(cave.bottom[i])]);
+  const floorPts = span.map((i): Point => [px(i), py(floorAt(i))]);
+  const slab = `${smoothPath([...topPts, ...[...underPts].reverse()])} Z`;
+  const interior = `${smoothPath([...underPts, ...[...floorPts].reverse()])} Z`;
+  const x0 = px(span[0]);
+  const x1 = px(span[span.length - 1]);
+  const id = `cave${chunk.index}`;
   const pocket = cave.pocket;
-  const nearPocket = (x: number, pad: number) => !!pocket && Math.abs(x - pocket.x) < pocket.r + pad;
+  const nearPocket = (x: number, pad: number) => !!pocket && Math.abs(cave.x0 + x - pocket.x) < pocket.r + pad;
   const r = mulberry32(hash(chunk.index, 811));
-  const spots = span
-    .filter((i) => i % 2 === 1 && cave.bottom[i] - cave.top[i] > 40)
-    .map((i) => ({ key: i, x: i * PROFILE_STEP + (r() - 0.5) * 16, y: (cave.top[i] + cave.bottom[i]) / 2 - minTop + (r() - 0.5) * 20, rx: 6 + r() * 10, ry: 4 + r() * 6 }));
-  const edge: { key: string; name: SpriteName; x: number; y: number; w: number; flipY: boolean }[] = [];
-  const hanging: { key: string; name: SpriteName; x: number; y: number; w: number; sway: boolean }[] = [];
-  for (let x = ROCK_STEP / 2; x < CHUNK_W; x += ROCK_STEP) {
-    const top = caveSample(cave.top, x);
-    const bottom = caveSample(cave.bottom, x);
-    const thick = bottom - top;
-    if (thick < 18) continue;
-    const scale = Math.min(1, thick / 90);
-    const w = (100 + r() * 30) * Math.max(0.55, scale);
-    const name: SpriteName = r() < 0.5 ? 'cave_rock_a' : 'cave_rock_b';
-    if (thick > 60) {
-      for (let y = top + 34; y < bottom - 30; y += 32) {
-        if (nearPocket(cave.x0 + x + ROCK_STEP / 2, 40) && y > (pocket?.y ?? 0) - (pocket?.r ?? 0) - 30) continue;
-        const mw = 90 + r() * 30;
-        edge.push({ key: `m${x}:${Math.round(y)}`, name: r() < 0.5 ? 'cave_rock_a' : 'cave_rock_b', x: cave.x0 + x + ROCK_STEP / 2 + (r() - 0.5) * 20, y, w: mw, flipY: r() < 0.5 });
-      }
-    }
-    edge.push({ key: `t${x}`, name, x: cave.x0 + x + (r() - 0.5) * 14, y: top + spriteHeight(name, w) * 0.18, w, flipY: false });
-    if (!nearPocket(cave.x0 + x, 46)) edge.push({ key: `b${x}`, name: name === 'cave_rock_a' ? 'cave_rock_b' : 'cave_rock_a', x: cave.x0 + x + (r() - 0.5) * 14, y: bottom - spriteHeight(name, w) * 0.22, w, flipY: true });
-    if (nearPocket(cave.x0 + x, 30)) continue;
-    if (thick > 50 && r() < 0.45) hanging.push({ key: `s${x}`, name: 'stalactite', x: cave.x0 + x, y: bottom - 10, w: 44 + r() * 18, sway: false });
-    else if (thick > 50 && r() < 0.35) hanging.push({ key: `w${x}`, name: 'hanging_weed', x: cave.x0 + x, y: bottom - 6, w: 38 + r() * 14, sway: true });
-  }
+  const thick = (i: number) => cave.bottom[i] - cave.top[i];
+  const pebbles = span
+    .filter((i) => thick(i) > 46)
+    .map((i) => ({ key: i, x: px(i) + (r() - 0.5) * 16, y: py(cave.top[i] + SAND_BAND + (thick(i) - SAND_BAND) * (0.3 + r() * 0.45)), rx: 3 + r() * 6, ry: 2 + r() * 3 }));
+  const drips = span
+    .filter((i) => thick(i) > 40 && !nearPocket(px(i), 34) && r() < 0.55)
+    .map((i) => {
+      const x = px(i) + (r() - 0.5) * 10;
+      const base = py(caveSample(cave.bottom, x)) - 4;
+      const len = 12 + r() * 20;
+      const w = 6 + r() * 6;
+      return { key: i, d: `M${x - w},${base} Q${x - w * 0.25},${base + len * 0.55} ${x},${base + len} Q${x + w * 0.25},${base + len * 0.55} ${x + w},${base} Z` };
+    });
+  const weeds = span
+    .filter((i) => i % 3 === 1 && thick(i) > 50 && !nearPocket(px(i), 40) && r() < 0.5)
+    .map((i) => ({ key: `w${i}`, x: cave.x0 + px(i) + 12, y: caveSample(cave.bottom, px(i) + 12) - 8, w: 34 + r() * 14 }));
+  const plants = chunk.decor.filter((d) => !d.front && d.width < 110 && spriteHeight(d.sprite, d.width) < 140);
+  const crown: DecorItem[] = plants.length
+    ? span
+        .filter((i) => i % 4 === 2 && thick(i) > 55)
+        .slice(0, 3)
+        .map((i, k) => {
+          const model = plants[(((k + chunk.index) % plants.length) + plants.length) % plants.length];
+          const x = cave.x0 + px(i) + (r() - 0.5) * 20;
+          return { ...model, key: `p${i}`, x, y: caveSample(cave.top, x - cave.x0) + 6, width: model.width * 0.75, flip: r() < 0.5 };
+        })
+    : [];
   const crystals = [0.18, 0.82]
     .filter(() => r() < 0.75)
     .map((t, i) => {
       const x = cave.x0 + CHUNK_W * t + (r() - 0.5) * 40;
-      const floor = chunk.profile[Math.min(chunk.profile.length - 1, Math.round((x - cave.x0) / PROFILE_STEP))];
-      return { key: `c${i}`, x, y: floor + 4, w: 34 + r() * 14 };
+      return { key: `c${i}`, x, y: floorAt(Math.round((x - cave.x0) / PROFILE_STEP)) + 4, w: 34 + r() * 14 };
     });
+  const colors: RockColors = { top: sand.sand, mid: sand.sandDark, bottom: sand.sandEdge, line: sand.sandEdge, light: sand.sand };
   return (
     <>
-      <Svg style={[styles.svg, { left: cave.x0, top: minTop, width: CHUNK_W + 2, height }]} width={CHUNK_W + 2} height={height}>
+      <Svg style={[styles.svg, { left: cave.x0, top: svgTop, width: CHUNK_W + 2, height }]} width={CHUNK_W + 2} height={height}>
         <Defs>
-          <LinearGradient id={`rock${chunk.index}`} x1="0" y1="0" x2="0" y2="1">
-            <Stop offset="0" stopColor="#4669A8" />
-            <Stop offset="0.55" stopColor="#2F4F8C" />
-            <Stop offset="1" stopColor="#1E3566" />
+          <LinearGradient id={`${id}s`} gradientUnits="userSpaceOnUse" x1="0" y1={-svgTop} x2="0" y2={SAND_GRADIENT_END - svgTop}>
+            <Stop offset="0" stopColor={sand.sandDark} />
+            <Stop offset="1" stopColor={sand.sandEdge} />
           </LinearGradient>
+          <LinearGradient id={`${id}d`} x1="0" y1="0" x2="0" y2="1">
+            <Stop offset="0" stopColor={CAVE_SHADE} stopOpacity={0.62} />
+            <Stop offset="0.55" stopColor={CAVE_SHADE} stopOpacity={0.38} />
+            <Stop offset="1" stopColor={CAVE_SHADE} stopOpacity={0.12} />
+          </LinearGradient>
+          <LinearGradient id={`${id}f`} gradientUnits="userSpaceOnUse" x1={x0} y1="0" x2={x1} y2="0">
+            <Stop offset="0" stopColor="#FFFFFF" stopOpacity={0} />
+            <Stop offset="0.24" stopColor="#FFFFFF" stopOpacity={1} />
+            <Stop offset="0.76" stopColor="#FFFFFF" stopOpacity={1} />
+            <Stop offset="1" stopColor="#FFFFFF" stopOpacity={0} />
+          </LinearGradient>
+          <Mask id={`${id}m`}>
+            <Rect x={0} y={0} width={CHUNK_W + 2} height={height} fill={`url(#${id}f)`} />
+          </Mask>
+          <ClipPath id={`${id}c`}>
+            <Path d={slab} />
+          </ClipPath>
         </Defs>
-        <Path d={rock} fill={`url(#rock${chunk.index})`} stroke="#0A1F45" strokeWidth={3} strokeLinejoin="round" />
-        {spots.map((p) => (
-          <Ellipse key={p.key} cx={p.x} cy={p.y} rx={p.rx} ry={p.ry} fill="#1A2E5C" opacity={0.55} />
+        <Path d={interior} fill={`url(#${id}d)`} mask={`url(#${id}m)`} />
+        {drips.map((p) => (
+          <Path key={p.key} d={p.d} fill={`url(#${id}s)`} stroke={sand.sandEdge} strokeWidth={2.5} strokeLinejoin="round" />
         ))}
+        <Path d={slab} fill={`url(#${id}s)`} />
+        <G clipPath={`url(#${id}c)`}>
+          <Path d={smoothPath(topPts)} stroke={sand.sand} strokeWidth={SAND_BAND * 2} fill="none" strokeLinejoin="round" />
+          <Path d={smoothPath(underPts)} stroke={CAVE_SHADE} strokeOpacity={0.3} strokeWidth={20} fill="none" strokeLinejoin="round" />
+          {pebbles.map((p) => (
+            <Ellipse key={p.key} cx={p.x} cy={p.y} rx={p.rx} ry={p.ry} fill={sand.sandEdge} opacity={0.45} />
+          ))}
+        </G>
+        <Path d={slab} fill="none" stroke={sand.sandEdge} strokeWidth={4} strokeLinejoin="round" />
       </Svg>
+      {crown.map((item) => (
+        <DecorSprite key={item.key} item={item} />
+      ))}
       {crystals.map((c) => (
         <View key={c.key}>
           <Animated.View
@@ -312,25 +362,10 @@ export const CaveRock = memo(function CaveRock({ chunk }: { chunk: Chunk }) {
           <Image source={SPRITES.cave_crystal.source} fadeDuration={0} style={{ position: 'absolute', left: c.x - c.w / 2, top: c.y - spriteHeight('cave_crystal', c.w), width: c.w, height: spriteHeight('cave_crystal', c.w) }} />
         </View>
       ))}
-      {hanging.map((h) =>
-        h.sway ? (
-          <AnimatedSprite key={h.key} name={h.name} left={h.x - h.w / 2} top={h.y} width={h.w} rotate={swayRotations[((Math.round(h.x) % 3) + 3) % 3][1]} origin="top" />
-        ) : (
-          <Image key={h.key} source={SPRITES[h.name].source} fadeDuration={0} style={{ position: 'absolute', left: h.x - h.w / 2, top: h.y, width: h.w, height: spriteHeight(h.name, h.w) }} />
-        ),
-      )}
-      {edge.map((e) => {
-        const h = spriteHeight(e.name, e.w);
-        return (
-          <Image
-            key={e.key}
-            source={SPRITES[e.name].source}
-            fadeDuration={0}
-            style={{ position: 'absolute', left: e.x - e.w / 2, top: e.y - h / 2, width: e.w, height: h, transform: e.flipY ? [{ scaleY: -1 }] : [] }}
-          />
-        );
-      })}
-      {pocket && <AirPocket x={pocket.x} y={pocket.y} r={pocket.r} seed={chunk.index} colors={CAVE_COLORS} />}
+      {weeds.map((h) => (
+        <AnimatedSprite key={h.key} name="hanging_weed" left={h.x - h.w / 2} top={h.y} width={h.w} rotate={swayRotations[((Math.round(h.x) % 3) + 3) % 3][1]} origin="top" />
+      ))}
+      {pocket && <AirPocket x={pocket.x} y={pocket.y} r={pocket.r} seed={chunk.index} colors={colors} />}
     </>
   );
 });
