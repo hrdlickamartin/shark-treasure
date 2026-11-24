@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import type { SaveData } from '../progression/saveData';
 import { GameButton } from './Button';
 import { Overlay, Panel, Title } from './Panel';
@@ -23,10 +23,12 @@ function Toggle({ label, value, onToggle }: { label: string; value: boolean; onT
 
 export function Settings({ settings, onChange, onReset, onClose }: Props) {
   const [confirm, setConfirm] = useState(false);
+  const { height } = useWindowDimensions();
   return (
     <Overlay dim={0.65}>
-      <Panel style={styles.panel}>
+      <Panel style={[styles.panel, { maxHeight: height - 24 }]}>
         <Title size={28}>Nastavení</Title>
+        <ScrollView style={styles.scroll} contentContainerStyle={styles.list} showsVerticalScrollIndicator={false}>
         <Toggle label="Hudba" value={settings.music} onToggle={() => onChange({ music: !settings.music })} />
         <Toggle label="Zvukové efekty" value={settings.sfx} onToggle={() => onChange({ sfx: !settings.sfx })} />
         <Toggle label="Vibrace" value={settings.haptics} onToggle={() => onChange({ haptics: !settings.haptics })} />
@@ -54,6 +56,7 @@ export function Settings({ settings, onChange, onReset, onClose }: Props) {
         ) : (
           <GameButton label="Smazat postup" variant="red" size="sm" onPress={() => setConfirm(true)} />
         )}
+        </ScrollView>
         <GameButton label="Zpět" variant="blue" onPress={onClose} />
       </Panel>
     </Overlay>
@@ -62,7 +65,9 @@ export function Settings({ settings, onChange, onReset, onClose }: Props) {
 
 const styles = StyleSheet.create({
   panel: { width: '100%', maxWidth: 400, gap: 9, alignItems: 'stretch' },
-  row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  scroll: { flexGrow: 0, flexShrink: 1 },
+  list: { gap: 9 },
+  row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
   label: { color: COLORS.white, fontFamily: FONTS.bodyHeavy, fontSize: 15, flexShrink: 1 },
   toggle: { minWidth: 80 },
   confirm: { gap: 8, alignItems: 'center' },

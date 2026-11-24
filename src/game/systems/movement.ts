@@ -81,10 +81,6 @@ export function updateDiverMovement(state: GameState, input: Input, dt: number) 
   if (Math.abs(ix) < 0.1) diver.vx *= Math.exp(-4 * dt);
   if (Math.abs(iy) < 0.1) diver.vy *= Math.exp(-4 * dt);
 
-  const vmaxY = iy < 0 ? max * upBoost : max;
-  diver.vx = clamp(diver.vx, -max, max);
-  diver.vy = clamp(diver.vy, -vmaxY, vmaxY);
-
   let fx = 0;
   let fy = 0;
   for (const current of state.currents) {
@@ -93,11 +89,13 @@ export function updateDiverMovement(state: GameState, input: Input, dt: number) 
       fy += current.lift;
     }
   }
+  if (fx !== 0 && stats.racer) max *= 1.12;
+
+  const vmaxY = iy < 0 ? max * upBoost : max;
+  diver.vx = clamp(diver.vx, -max, max);
+  diver.vy = clamp(diver.vy, -vmaxY, vmaxY);
 
   if (state.condition === 'storm') fx += Math.sin(state.time * 0.6) * 45 + Math.sin(state.time * 1.7) * 15;
-  if (fx !== 0 && stats.racer) {
-    diver.vx = clamp(diver.vx * 1.12, -max * 1.12, max * 1.12);
-  }
   if (diver.anchor > 0) {
     fx = 0;
     fy = 0;

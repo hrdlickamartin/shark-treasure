@@ -498,6 +498,7 @@ export function generateChunk(state: GameState, index: number): Chunk {
     state.sharks = state.sharks.filter((c) => !own(c.id));
     state.hazards = state.hazards.filter((c) => !own(c.id));
     state.coins = state.coins.filter((c) => !own(c.id));
+    state.props = state.props.filter((p) => !own(p.id) || p.kind === 'vent' || p.kind === 'gate' || (p.kind === 'lever' && !!p.tag?.startsWith('gate:')));
   }
   return { index, x0, decor, profile, top, regionId, palette: { sand: region.sand, sandDark: region.sandDark, sandEdge: region.sandEdge }, cave, boss };
 }

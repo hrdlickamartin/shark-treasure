@@ -112,7 +112,7 @@ export function GameScreen() {
       return { slot, sprite: MODULES[id!].sprite, x: spot.x, y: spot.y, width: spot.width };
     }),
   });
-  const meta = { expedition: save.expedition, perks: save.perks, research: save.research, mods: save.mods.equipped, modules: activeModules(save) };
+  const meta = { expedition: save.expedition, perks: save.perks, research: save.research, mods: save.mods.equipped, modules: activeModules(save), tideEnding: save.tideEnding };
   const startX = () => (OCEANS[save.ocean].moving ? reefShift(save.stats.dives) : 0);
   const statsWith = (challenge: ChallengeId | null) => statsFor(save.upgrades, save.relics, challenge, meta);
   if (loaded && !gameRef.current) gameRef.current = createGame(statsWith(null), view, startX(), optionsFor(null));
@@ -125,9 +125,10 @@ export function GameScreen() {
   const endingPending = (save.storyChapter >= CHAPTER_COUNT && !save.ending) || (!!tideChoice && !save.tideEnding);
   const todaysChallenge = save.challengeDone === todayKey() ? null : challengeFor(todayKey());
 
+  const dialogOpen = save.pendingDialogs.length > 0;
   useEffect(() => {
-    if (endingPending && screen === 'play' && gameRef.current?.phase === 'boat') setScreen('ending');
-  }, [endingPending, screen]);
+    if (endingPending && screen === 'play' && gameRef.current?.phase === 'boat' && !dialogOpen && !heldDialog.current) setScreen('ending');
+  }, [endingPending, screen, dialogOpen]);
 
   useEffect(() => {
     audio.init();
@@ -142,11 +143,11 @@ export function GameScreen() {
   useEffect(() => {
     const game = gameRef.current;
     if (!game) return;
-    game.stats = statsFor(save.upgrades, save.relics, game.challenge, { expedition: save.expedition, perks: save.perks, research: save.research });
+    game.stats = statsFor(save.upgrades, save.relics, game.challenge, { expedition: save.expedition, perks: save.perks, research: save.research, mods: save.mods.equipped, modules: activeModules(save), tideEnding: save.tideEnding });
     game.ownedRelics = save.relics;
     game.skin = save.skin;
     if (game.phase !== 'dive') game.diver.oxygen = game.stats.oxygenMax;
-  }, [save.upgrades, save.relics, save.skin, save.expedition, save.perks, save.research]);
+  }, [save.upgrades, save.relics, save.skin, save.expedition, save.perks, save.research, save.mods.equipped, save.modules.equipped, save.tideEnding]);
 
   const showToast = useCallback((text: string, seconds = 2.6) => setToast({ text, until: Date.now() + seconds * 1000 }), []);
 

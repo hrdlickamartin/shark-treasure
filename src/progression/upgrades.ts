@@ -102,6 +102,7 @@ export interface Meta {
   research?: string[];
   mods?: Partial<Record<ModSlot, ModId>>;
   modules?: BoatModules;
+  tideEnding?: 'escort' | 'sleep' | 'harvest' | null;
 }
 
 export const NO_META: Meta = { expedition: 0, perks: {} };
@@ -143,8 +144,10 @@ export function statsFor(levels: UpgradeLevels, relics: RelicId[] = [], challeng
   const has = (id: ModId) => mods.has(id);
   const chamber = equipped(modules, 'chamber');
   const trophy = equipped(modules, 'trophy') ? relics.length * 0.02 : 0;
+  const harvest = meta.tideEnding === 'harvest' ? 1.1 : 1;
+  const escort = meta.tideEnding === 'escort' ? 0.05 : 0;
   return {
-    oxygenMax: Math.round(oxygenFor(levels.tank) * (1 + bonus.oxygen + perk.oxygen) * (rules?.oxygen ?? 1)),
+    oxygenMax: Math.round(oxygenFor(levels.tank) * (1 + bonus.oxygen + perk.oxygen) * (rules?.oxygen ?? 1) * harvest),
     speed: speedFor(levels.fins) * (1 + bonus.speed + lab.speed),
     armor: Math.min(0.75, armorFor(levels.suit) + bonus.armor + (chamber ? 0.08 : 0)),
     capacity: rules?.capacity ?? 2 + levels.capacity + lab.capacity,
@@ -162,9 +165,9 @@ export function statsFor(levels: UpgradeLevels, relics: RelicId[] = [], challeng
     scooter: levels.scooter,
     harpoons: levels.harpoon,
     submarine: levels.submarine,
-    danger: scale.danger,
-    sharkSpeed: scale.sharkSpeed,
-    lootBonus: scale.loot + perk.loot + lab.loot,
+    danger: scale.danger * harvest,
+    sharkSpeed: scale.sharkSpeed * harvest,
+    lootBonus: scale.loot + perk.loot + lab.loot + escort,
     safeDepth: safeDepthFor(levels.pressure) + lab.depth + (has('seal') ? 20 : 0),
     thermal: thermalFor(levels.thermal) * lab.thermal * (has('seal') ? 0.85 : 1),
     cutter: levels.cutter,

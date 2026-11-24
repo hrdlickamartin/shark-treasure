@@ -46,8 +46,19 @@ Zdroj: `Shark_Treasure_The_Living_Tides_Rozsireni.pdf`. Navazuje na `docs/lost-o
 15. [x] Gamepad a přístupnost (méně pohybu, pomalejší příliv, tvary rarity, větší text dialogů)
 16. [x] Assety: sprity, pozadí, rigy; hudba a zvuky; kontrola ořezu a směru
 17. [x] Testy férovosti, `npm run check`, ověření v prohlížeči včetně animací, README, AGENTS.md
-18. [ ] Nasazení na GitHub Pages a push
+18. [x] Nasazení na GitHub Pages a push
 
 ## Mimo rozsah
 
 Nativní gamepad (vyžaduje nativní modul), skutečný online žebříček týdenní expedice (je jen lokální).
+
+## Zjednodušení oproti PDF
+
+- Hudba: místo dynamických vrstev jen dvě ambientní smyčky (`amb_riptide`, `amb_reef`) přepínané podle oceánu.
+- Strážce trhlin nemá čtyřfázový souboj; nad úlomkem a srdečním kamenem se zjevuje jeho ozvěna jako silueta.
+- Dutá ulita nemá mírumilovné řešení, poráží se přes řetězy a slabé místo.
+- Legendární expedice jsou bossové s dvojnásobným životem a dvojnásobným pokladem, bez nových útoků.
+- Dozvuky konců jsou střídmé: „Sklizeň“ zvedá kyslík, nebezpečí i rychlost žraloků o 10 %, „Doprovod“ přidá 5 % k lupu, „Spánek“ zastaví nové trhliny.
+- Rookovy závody jsou dva, ne čtyři.
+- Rádiová věž je na přídi lodi; dekompresní komora místo léčení po ponoru snižuje poškození o 8 % a zrychluje výstup o 15 %.
+- Gamepad funguje jen na webu přes Web Gamepad API.

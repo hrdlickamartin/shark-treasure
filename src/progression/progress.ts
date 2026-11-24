@@ -161,11 +161,12 @@ export function settle(before: SaveData, incoming: Record<string, SaveData['ques
 
 export function applyDive(current: SaveData, result: DiveResult): { save: SaveData; summary: ResultSummary } {
   const endless = result.mode === 'endless';
-  const missions = endless ? { done: current.missionsDone, progress: current.missionProgress, completed: [] } : applyMissions(result, current.missionsDone, current.missionProgress);
+  const free = result.variant === 'free';
+  const missions = endless || free ? { done: current.missionsDone, progress: current.missionProgress, completed: [] } : applyMissions(result, current.missionsDone, current.missionProgress);
   const missionScale = expeditionScale(current.expedition).missions;
   const missionReward = missions.completed.reduce((sum, m) => sum + Math.round(m.reward * missionScale), 0);
   const quests = { ...current.quests };
-  if (!endless) {
+  if (!endless && !free) {
     for (const quest of activeQuests(current.quests, current.oceans, current.flags)) {
       if (quest.ocean !== result.ocean) continue;
       quests[quest.id] = progressQuest(quest, current.quests[quest.id] ?? EMPTY_QUEST, result);
@@ -175,7 +176,8 @@ export function applyDive(current: SaveData, result: DiveResult): { save: SaveDa
   const newRelics = result.relics.filter((r) => !current.relics.includes(r));
   const newPlaces = result.discoveries.filter((d) => d.startsWith('loc:') && !current.discoveries.includes(d));
   const diveResearch = photos.reward.research + newPlaces.length * 8 + newRelics.length * 20;
-  const diveXp = Math.round(result.maxDepthM / 2) + (result.success ? result.chests.length * 10 : 0) + newPlaces.length * 15 + photos.reward.xp + missions.completed.length * 20;
+  const aquarium = equipped(activeModules(current), 'aquarium') ? 1.05 : 1;
+  const diveXp = Math.round(result.maxDepthM / 2) + (result.success ? result.chests.length * 10 : 0) + newPlaces.length * 15 + Math.round(photos.reward.xp * aquarium) + missions.completed.length * 20;
 
   const base: SaveData = {
     ...current,
@@ -185,6 +187,7 @@ export function applyDive(current: SaveData, result: DiveResult): { save: SaveDa
     xp: current.xp + diveXp,
     pearls: current.pearls + (endless ? shaftPearls(current.shaftBest, result.maxDepthM) : 0),
     supplies: { medkit: 0, balloon: 0, harpoon: 0 },
+    kit: free ? addCounts(current.kit, result.kitUsed, -1) : current.kit,
     shaftBest: endless ? Math.max(current.shaftBest, result.maxDepthM) : current.shaftBest,
     missionsDone: missions.done,
     missionProgress: missions.progress,
@@ -204,7 +207,7 @@ export function applyDive(current: SaveData, result: DiveResult): { save: SaveDa
       chests: current.stats.chests + (result.success ? result.chests.length : 0),
     },
   };
-  const tide = expansionOn(current) ? applyTideDive(base, result, todayKey(), weekIndex(), equipped(activeModules(current), 'aquarium')) : null;
+  const tide = expansionOn(current) && !free ? applyTideDive(base, result, todayKey(), weekIndex(), equipped(activeModules(current), 'aquarium')) : null;
   const settled = settle(tide ? tide.save : base, quests);
   const beforeLevel = explorerLevel(current.xp);
   const afterLevel = explorerLevel(settled.save.xp);

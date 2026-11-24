@@ -388,7 +388,7 @@ export const TIDE_QUESTS: QuestDef[] = [
       { kind: 'choice', label: 'Rozhodni, jakou cestu Strážci ukážeš' },
     ],
     reward: r(15000, 1000, 150, 10),
-    briefing: [{ who: 'maya', text: 'Srdeční kámen je těžký. Vezmi balóny, nebo plav pomalu. Ať se stane cokoli – jsme posádka.' }],
+    briefing: [{ who: 'maya', text: 'Srdeční kámen je těžký – plav pomalu, hlídej kyslík a kotvi loď co nejblíž. Ať se stane cokoli – jsme posádka.' }],
     choice: {
       prompt: [
         { who: 'jun', text: 'Strážce čeká. Můžeme ho doprovodit chráněnou trasou, uspat ho, nebo… si vzít jeho sílu.' },
