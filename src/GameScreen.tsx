@@ -24,7 +24,7 @@ import { Live, nextFrame } from './hooks/useFrame';
 import { useGameLoop } from './hooks/useGameLoop';
 import { useKeyboard } from './hooks/useKeyboard';
 import { useGamepad, type PadButton } from './hooks/useGamepad';
-import { activeQuests, CHAPTER_COUNT, photoMatches, questProps } from './progression/quests';
+import { activeQuests, CHAPTER_COUNT, currentObjective, objectiveHowTo, objectivePropPrefix, photoMatches, questProps } from './progression/quests';
 import { photoMessage } from './progression/encyclopedia';
 import type { SaveData, TideEnding } from './progression/saveData';
 import type { Line } from './progression/characters';
@@ -366,9 +366,19 @@ export function GameScreen() {
   const dialog = heldDialog.current ?? (save.pendingDialogs.length ? dialogueFor(save.pendingDialogs[0]) : null);
   const merchantPrice = 300 + OCEAN_ORDER.indexOf(save.ocean) * 150;
 
+  const objective = currentObjective(save.quests, save.oceans, save.flags, save.ocean);
+
   const boatHint = (g: GameState) => {
-    const target = !save.settings.markers ? null : objectiveProps(g).reduce<{ x: number } | null>((best, p) => (!best || Math.abs(p.x - g.boat.x) < Math.abs(best.x - g.boat.x) ? p : best), null);
-    if (target) return `Cíl úkolu: ${Math.round(Math.abs(target.x - g.boat.x) / PX_PER_M)} m ${target.x > g.boat.x ? 'vpravo' : 'vlevo'}`;
+    const nearest = (props: { x: number }[]) => props.reduce<{ x: number } | null>((best, p) => (!best || Math.abs(p.x - g.boat.x) < Math.abs(best.x - g.boat.x) ? p : best), null);
+    const where = (target: { x: number } | null) => (target && save.settings.markers ? `${Math.round(Math.abs(target.x - g.boat.x) / PX_PER_M)} m ${target.x > g.boat.x ? 'vpravo' : 'vlevo'}` : null);
+    if (g.mode !== 'endless' && g.variant === 'normal' && objective) {
+      const prefix = objectivePropPrefix(objective);
+      const place = where(nearest(objectiveProps(g).filter((p) => p.id.startsWith(prefix))));
+      const how = objectiveHowTo(objective.goal);
+      return `Úkol: ${objective.goal.label}${place ? ` • ${place}` : how ? ` – ${how}` : ''}`;
+    }
+    const fallback = where(nearest(objectiveProps(g)));
+    if (fallback) return `Cíl úkolu: ${fallback}`;
     if (g.mode === 'endless') return `Hlubinný ponor – rekord ${save.shaftBest} m. Mince se vyplatí vždy.`;
     if (g.condition !== 'normal') return `${CONDITIONS[g.condition].name}: ${CONDITIONS[g.condition].description}`;
     return `${OCEANS[g.ocean].port} – pluj lodí ◀ ▶ a vyber místo ponoru`;

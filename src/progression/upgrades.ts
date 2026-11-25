@@ -65,7 +65,7 @@ export const UPGRADES: UpgradeDef[] = [
   { id: 'pressure', name: 'Tlakový oblek', description: 'Bezpečný ponor do větších hloubek', icon: 'icon_pressure', max: 5, extra: 2, baseCost: 500, growth: 1.85, effect: (l) => `bezpečně do ${safeDepthFor(l)} m` },
   { id: 'thermal', name: 'Termooblek', description: 'Chrání před chladem i žárem', icon: 'icon_thermal', max: 3, extra: 2, baseCost: 700, growth: 1.9, effect: (l) => (l ? `−${Math.round((1 - thermalFor(l)) * 100)} % ztráty teploty` : 'nemáš') },
   { id: 'cutter', name: 'Řezák', description: 'Otevře zapečetěné truhly a vraky', icon: 'icon_cutter', max: 2, extra: 1, baseCost: 1400, growth: 2, effect: (l) => (l ? `řez za ${cutTime(l).toLocaleString('cs-CZ')} s` : 'nemáš') },
-  { id: 'camera', name: 'Fotoaparát', description: 'Lepší objektiv: větší dosah a kvalitnější fotky', icon: 'icon_camera', max: 3, extra: 1, baseCost: 350, growth: 1.9, effect: (l) => `dosah ${Math.round(cameraRange(l + 1) / 10)} m` },
+  { id: 'camera', name: 'Objektiv fotoaparátu', description: 'Foťák máš od začátku, objektiv přidá dosah a kvalitnější fotky', icon: 'icon_camera', max: 3, extra: 1, baseCost: 350, growth: 1.9, effect: (l) => `dosah ${Math.round(cameraRange(l + 1) / 10)} m` },
   { id: 'boat', name: 'Lodní motor', description: 'Rychlejší plavba po oceánu', icon: 'icon_engine', max: 5, extra: 2, baseCost: 800, growth: 2.1, effect: (l) => `rychlost ${Math.round(((170 + l * 30) / 170) * 100)} %` },
   { id: 'drone', name: 'Dron Pip', description: 'Mayin průzkumník: odhalí, donese, naskenuje', icon: 'icon_pip', max: 3, extra: 0, baseCost: 1200, growth: 2.5, expansion: true, effect: (l) => (l ? `úroveň ${l}, dosah ${Math.round(droneRangeFor(l) / 10)} m` : 'získáš v příběhu') },
 ];

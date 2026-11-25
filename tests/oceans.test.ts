@@ -11,7 +11,7 @@ import { floorAt } from '../src/game/terrain';
 import { generateChunk, newShark } from '../src/game/world';
 import { applyDive } from '../src/progression/progress';
 import { applyChoice } from '../src/progression/progress';
-import { chapterEndFor, itemX, questProps, QUESTS, type QuestState } from '../src/progression/quests';
+import { chapterEndFor, currentObjective, itemX, objectiveHowTo, questProps, QUESTS, type QuestState } from '../src/progression/quests';
 import { dialogueFor } from '../src/progression/dialogue';
 import { endingAvailable } from '../src/progression/story';
 import { DEFAULT_SAVE, migrateSave, type SaveData } from '../src/progression/saveData';
@@ -281,6 +281,21 @@ test('First Dive: součástky, fotka ryby a sonarový bod se splní v jednom pon
   assert.ok(summary.quests.some((q) => q.id === 'first_dive'));
   assert.ok(next.pendingDialogs.includes('debrief:first_dive'));
   assert.ok(QUESTS.filter((q) => q.requires?.includes('first_dive')).every((q) => questProps(next.quests, next.oceans, next.flags, 'caribbean').some((p) => p.quest === q.id) || q.steps.every((g) => g.kind !== 'deliver')));
+});
+
+test('samotná fotka ryby splní krok First Dive, souhrn ho ukáže a nápověda přejde na další krok', () => {
+  const save = saveWith({});
+  const start = currentObjective(save.quests, save.oceans, save.flags, 'caribbean');
+  assert.equal(start?.quest.id, 'first_dive');
+  assert.equal(start?.goal.kind, 'deliver');
+  const parts = questProps(save.quests, save.oceans, save.flags, 'caribbean').filter((p) => p.id.startsWith('first_dive:0:')).map((p) => p.id);
+  const afterParts = applyDive(save, { ...fakeResult('caribbean'), delivered: parts }).save;
+  assert.equal(currentObjective(afterParts.quests, afterParts.oceans, afterParts.flags, 'caribbean')?.goal.kind, 'photo');
+  assert.ok(objectiveHowTo({ kind: 'photo', species: 'fish', label: '' }));
+  const { save: next, summary } = applyDive(afterParts, { ...fakeResult('caribbean'), photos: [{ species: 'fish_blue', stars: 3 }] });
+  assert.equal(next.quests.first_dive.done, false);
+  assert.deepEqual(summary.questSteps.map((st) => [st.label, st.done]), [['Vyfoť rybu pro katalog', 2]]);
+  assert.equal(currentObjective(next.quests, next.oceans, next.flags, 'caribbean')?.goal.kind, 'activate');
 });
 
 test('volba s diskem nastaví příznak, odměnu a posune příběh', () => {

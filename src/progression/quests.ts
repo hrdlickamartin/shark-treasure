@@ -739,6 +739,34 @@ export function activeQuests(quests: Record<string, QuestState>, oceans: OceanId
   return QUESTS.filter((q) => !quests[q.id]?.done && questAvailable(q, quests, oceans, flags));
 }
 
+const CATEGORY_ORDER: QuestCategory[] = ['main', 'maya', 'side', 'challenge'];
+
+export interface Objective {
+  quest: QuestDef;
+  step: number;
+  goal: QuestGoal;
+}
+
+export function currentObjective(quests: Record<string, QuestState>, oceans: OceanId[], flags: string[], ocean: OceanId): Objective | null {
+  const candidates = activeQuests(quests, oceans, flags)
+    .filter((q) => q.ocean === ocean)
+    .sort((a, b) => CATEGORY_ORDER.indexOf(a.category) - CATEGORY_ORDER.indexOf(b.category));
+  for (const quest of candidates) {
+    const state = quests[quest.id] ?? EMPTY_QUEST;
+    const step = quest.steps.findIndex((goal, s) => goal.kind !== 'choice' && !state.flags.includes(stepKey(quest.id, s)));
+    if (step >= 0) return { quest, step, goal: quest.steps[step] };
+  }
+  return null;
+}
+
+export function objectiveHowTo(goal: QuestGoal): string | null {
+  if (goal.kind === 'photo') return 'pod vodou zapni foťák a vyfoť zblízka';
+  if (goal.kind === 'chests') return 'doruč truhlice na loď';
+  return null;
+}
+
+export const objectivePropPrefix = (objective: Objective) => `${objective.quest.id}:${objective.step}:`;
+
 export function stepsDone(quest: QuestDef, state: QuestState): number {
   return quest.steps.filter((_, i) => state.flags.includes(stepKey(quest.id, i))).length;
 }

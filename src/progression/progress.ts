@@ -10,12 +10,18 @@ import { dialogueFor } from './dialogue';
 import { applyPhotos } from './encyclopedia';
 import { expeditionScale, shaftPearls } from './expedition';
 import { applyMissions, type MissionDef } from './missions';
-import { activeQuests, CHAPTER_COUNT, chapterOf, EMPTY_QUEST, oceansAfter, pendingChoice, progressQuest, questById, stepKey, type QuestDef } from './quests';
+import { activeQuests, CHAPTER_COUNT, chapterOf, EMPTY_QUEST, oceansAfter, pendingChoice, progressQuest, questById, stepKey, stepsDone, type QuestDef } from './quests';
 import { explorerLevel, levelReward } from './research';
 import type { SaveData } from './saveData';
 import { maxLevel, UPGRADES } from './upgrades';
 
 const MAX_BRIEFS = 3;
+
+export interface QuestStepDone {
+  quest: QuestDef;
+  label: string;
+  done: number;
+}
 
 export interface ResultSummary {
   result: DiveResult;
@@ -25,6 +31,7 @@ export interface ResultSummary {
   shaftPearls: number;
   shaftRecord: boolean;
   quests: QuestDef[];
+  questSteps: QuestStepDone[];
   questReward: number;
   photos: string[];
   xp: number;
@@ -166,10 +173,16 @@ export function applyDive(current: SaveData, result: DiveResult): { save: SaveDa
   const missionScale = expeditionScale(current.expedition).missions;
   const missionReward = missions.completed.reduce((sum, m) => sum + Math.round(m.reward * missionScale), 0);
   const quests = { ...current.quests };
+  const steps: QuestStepDone[] = [];
   if (!endless && !free) {
     for (const quest of activeQuests(current.quests, current.oceans, current.flags)) {
       if (quest.ocean !== result.ocean) continue;
-      quests[quest.id] = progressQuest(quest, current.quests[quest.id] ?? EMPTY_QUEST, result);
+      const before = current.quests[quest.id] ?? EMPTY_QUEST;
+      quests[quest.id] = progressQuest(quest, before, result);
+      quest.steps.forEach((goal, s) => {
+        const key = stepKey(quest.id, s);
+        if (!before.flags.includes(key) && quests[quest.id].flags.includes(key)) steps.push({ quest, label: goal.label, done: stepsDone(quest, quests[quest.id]) });
+      });
     }
   }
   const photos = applyPhotos(current.encyclopedia, result.photos);
@@ -233,6 +246,7 @@ export function applyDive(current: SaveData, result: DiveResult): { save: SaveDa
       shaftPearls: endless ? shaftPearls(current.shaftBest, result.maxDepthM) : 0,
       shaftRecord: endless && result.maxDepthM > current.shaftBest,
       quests: settled.completed,
+      questSteps: steps.filter((st) => !settled.completed.includes(st.quest)),
       questReward: settled.money,
       photos: photos.reward.improved,
       xp: diveXp + settled.xp,

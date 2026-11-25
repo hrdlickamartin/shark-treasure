@@ -143,6 +143,11 @@ export function DiveSummary({ summary, onContinue, onShop, maxHeight, pendingSha
                 </View>
               </View>
             ))}
+            {summary.questSteps.map((st) => (
+              <Text key={`${st.quest.id}:${st.label}`} style={styles.questStep}>
+                ✓ {st.label} • {st.quest.title} {st.done}/{st.quest.steps.length}
+              </Text>
+            ))}
             {summary.unlocked.length > 0 && <Text style={styles.boss}>Nový oceán na mapě: {summary.unlocked.map((o) => OCEANS[o].czech).join(', ')}</Text>}
             <View style={styles.progressRow}>
               <Text style={styles.progressText}>+{summary.xp} XP</Text>
@@ -274,6 +279,7 @@ const styles = StyleSheet.create({
   story: { flexDirection: 'row', gap: 10, alignItems: 'center', backgroundColor: 'rgba(255, 191, 50, 0.15)', borderRadius: 12, padding: 10, borderWidth: 1.5, borderColor: COLORS.gold },
   storyTitle: { color: COLORS.gold, fontFamily: FONTS.title, fontSize: 15 },
   storyText: { color: COLORS.white, fontFamily: FONTS.body, fontSize: 12 },
+  questStep: { color: COLORS.gold, fontFamily: FONTS.title, fontSize: 15, textAlign: 'center', ...textShadow },
   panel: { padding: 0, overflow: 'hidden', flexShrink: 1 },
   scroll: { flexGrow: 0, flexShrink: 1 },
   content: { alignItems: 'center', gap: 8, padding: 16, paddingBottom: 6 },
