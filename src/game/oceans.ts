@@ -80,7 +80,7 @@ export const OCEANS: Record<OceanId, OceanDef> = {
       { name: 'Blue Hole', subtitle: 'Vertikální jeskyně', baseDepth: 560, amplitude: 120, sand: '#C9AE84', sandDark: '#9E8460', sandEdge: '#6E5A40', tier: 2, decor: ['rock_big', 'seaweed', 'kelp', 'coral_orange', 'rock_small', 'coral_purple'], landmarks: [], caves: true, caveChance: 0.45 },
       { name: 'Shark Territory', subtitle: 'Nebezpečná zóna', baseDepth: 640, amplitude: 100, sand: '#B9A27E', sandDark: '#8E7A5A', sandEdge: '#5E4E38', tier: 3, decor: RUST, landmarks: [], caves: false, sharks: { reef: 40, hammer: 35, great: 25 } },
       { name: 'Sunken Galleon', subtitle: 'Vícestupňový vrak', baseDepth: 820, amplitude: 120, sand: '#9C8F78', sandDark: '#6F6656', sandEdge: '#4A4438', tier: 3, decor: RUST, landmarks: [{ decor: 'wreck', chance: 0.6 }], caves: true },
-      { name: 'Legendary Cave', subtitle: 'Doupě Megalodona', baseDepth: 980, amplitude: 140, sand: '#6E6A8E', sandDark: '#4A4668', sandEdge: '#2C2944', tier: 5, decor: ['rock_big', 'coral_purple', 'kelp', 'rock_small'], landmarks: [{ decor: 'ruins', chance: 0.45 }], caves: true },
+      { name: 'Legendary Cave', subtitle: 'Doupě Megalodona', baseDepth: 980, amplitude: 140, sand: '#6E6A8E', sandDark: '#4A4668', sandEdge: '#2C2944', tier: 5, lootScale: 0.7, decor: ['rock_big', 'coral_purple', 'kelp', 'rock_small'], landmarks: [{ decor: 'ruins', chance: 0.45 }], caves: true },
     ]),
     backgrounds: [
       { name: 'bg_shallow', depth: 0 },
@@ -235,7 +235,7 @@ export const OCEANS: Record<OceanId, OceanDef> = {
     boss: 'abyssal',
     sharks: { deep: 70, great: 30 },
     darkness: 0.35,
-    recommended: { pressure: 6, thermal: 0, light: 3, cutter: 0 },
+    recommended: { pressure: 4, thermal: 0, light: 3, cutter: 0 },
     map: { x: 0.42, y: 0.9 },
     water: '#0A1E4A',
     materials: { biogel: 4, scrap: 1 },

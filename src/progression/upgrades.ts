@@ -1,7 +1,7 @@
 import { CHALLENGES } from '../game/modifiers';
 import { DEPTH_SCALE } from '../game/terrain';
 import { MEDKIT_HEAL, photoRange, scooterFor, submarineDepthM } from '../game/systems/extras';
-import type { ChallengeId, RelicId, Stats } from '../game/types';
+import type { ChallengeId, RelicId, Stats, Supplies } from '../game/types';
 import type { SpriteName } from '../render/spriteAssets';
 import { expeditionScale, perkBonus, type PerkLevels } from './expedition';
 import { relicBonus } from './relics';
@@ -43,34 +43,50 @@ export interface UpgradeDef {
   baseCost: number;
   growth: number;
   expansion?: boolean;
+  story?: number[];
   effect: (level: number) => string;
 }
 
 export const UPGRADES: UpgradeDef[] = [
-  { id: 'tank', name: 'Kyslíková nádrž', description: 'Delší ponory', icon: 'icon_tank', max: 6, extra: 3, baseCost: 150, growth: 1.75, effect: (l) => `${oxygenFor(l)} s kyslíku` },
-  { id: 'fins', name: 'Ploutve', description: 'Vyšší rychlost', icon: 'icon_fins', max: 5, extra: 2, baseCost: 180, growth: 1.8, effect: (l) => `rychlost ${Math.round((speedFor(l) / speedFor(0)) * 100)} %` },
-  { id: 'suit', name: 'Neopren', description: 'Odolnost vůči útokům', icon: 'icon_suit', max: 5, extra: 1, baseCost: 220, growth: 1.8, effect: (l) => `-${Math.round(armorFor(l) * 100)} % poškození` },
-  { id: 'capacity', name: 'Síť na poklady', description: 'Uneseš víc truhlic', icon: 'icon_net', max: 3, extra: 1, baseCost: 400, growth: 2.2, effect: (l) => `${2 + l} truhlice` },
-  { id: 'sonar', name: 'Sonar', description: 'Ukazuje poklady poblíž', icon: 'icon_sonar', max: 3, extra: 1, baseCost: 500, growth: 2, effect: (l) => (l ? `dosah ${Math.round(sonarFor(l) / 10)} m` : 'nemáš') },
+  { id: 'tank', name: 'Kyslíková nádrž', description: 'Delší ponory', icon: 'icon_tank', max: 6, extra: 5, baseCost: 150, growth: 1.75, story: [2, 4, 6, 8], effect: (l) => `${oxygenFor(l)} s kyslíku` },
+  { id: 'fins', name: 'Ploutve', description: 'Vyšší rychlost', icon: 'icon_fins', max: 5, extra: 3, baseCost: 180, growth: 1.8, story: [4, 8], effect: (l) => `rychlost ${Math.round((speedFor(l) / speedFor(0)) * 100)} %` },
+  { id: 'suit', name: 'Neopren', description: 'Odolnost vůči útokům', icon: 'icon_suit', max: 5, extra: 3, baseCost: 220, growth: 1.8, story: [3, 6, 8], effect: (l) => `-${Math.round(armorFor(l) * 100)} % poškození` },
+  { id: 'capacity', name: 'Síť na poklady', description: 'Uneseš víc truhlic', icon: 'icon_net', max: 3, extra: 1, baseCost: 400, growth: 2.2, story: [6], effect: (l) => `${2 + l} truhlice` },
+  { id: 'sonar', name: 'Sonar', description: 'Ukazuje poklady poblíž', icon: 'icon_sonar', max: 3, extra: 1, baseCost: 500, growth: 2, story: [5], effect: (l) => (l ? `dosah ${Math.round(sonarFor(l) / 10)} m` : 'nemáš') },
   { id: 'light', name: 'Světlo', description: 'Vidíš v hlubinách', icon: 'icon_light', max: 3, extra: 1, baseCost: 600, growth: 2, effect: (l) => (l ? `úroveň ${l}` : 'nemáš') },
-  { id: 'ascent', name: 'Vztlaková vesta', description: 'Rychlejší návrat na hladinu', icon: 'icon_vest', max: 3, extra: 2, baseCost: 350, growth: 1.9, effect: (l) => `+${Math.round(l * 20)} % výstup` },
-  { id: 'balloon', name: 'Zvedací balón', description: 'Pošle truhlici k hladině', icon: 'balloon', max: 3, extra: 2, baseCost: 450, growth: 1.9, effect: (l) => (l ? `${l}× za ponor` : 'nemáš') },
-  { id: 'repellent', name: 'Plašič žraloků', description: 'Odežene žraloky v nouzi', icon: 'icon_repellent', max: 3, extra: 2, baseCost: 380, growth: 1.9, effect: (l) => (l ? `${l}× za ponor` : 'nemáš') },
-  { id: 'magnet', name: 'Magnet na mince', description: 'Přitahuje mince z dálky', icon: 'icon_magnet', max: 3, extra: 2, baseCost: 320, growth: 1.9, effect: (l) => (l ? `dosah ${Math.round((30 + magnetFor(l) * 2.5) / 10)} m` : 'nemáš') },
-  { id: 'insurance', name: 'Pojištění nákladu', description: 'Při nezdaru vrátí část pokladu', icon: 'icon_insurance', max: 3, extra: 2, baseCost: 600, growth: 2, effect: (l) => (l ? `vrátí ${Math.round(insuranceFor(l) * 100)} %` : 'nemáš') },
-  { id: 'medkit', name: 'Lékárnička', description: 'Doplní zdraví během ponoru', icon: 'icon_medkit', max: 3, extra: 2, unlockAt: 1, baseCost: 900, growth: 1.9, effect: (l) => (l ? `${l}× za ponor, +${MEDKIT_HEAL} zdraví` : 'nemáš') },
-  { id: 'scooter', name: 'Podvodní skútr', description: 'Krátký rychlý výpad', icon: 'icon_scooter', max: 3, extra: 2, unlockAt: 1, baseCost: 1100, growth: 1.9, effect: (l) => (l ? `${scooterFor(l).time.toLocaleString('cs-CZ')} s, nabití ${scooterFor(l).cooldown} s` : 'nemáš') },
-  { id: 'harpoon', name: 'Harpuna', description: 'Střílí na žraloky a nebezpečné tvory před tebou', icon: 'icon_harpoon', max: 3, extra: 2, baseCost: 700, growth: 1.9, effect: (l) => (l ? `${l}× za ponor` : 'nemáš') },
-  { id: 'submarine', name: 'Mini ponorka', description: 'Kotví pod lodí a doplňuje kyslík', icon: 'icon_submarine', max: 3, extra: 2, unlockAt: 2, baseCost: 2500, growth: 1.8, effect: (l) => (l ? `stanice v ${submarineDepthM(l)} m` : 'nemáš') },
-  { id: 'pressure', name: 'Tlakový oblek', description: 'Bezpečný ponor do větších hloubek', icon: 'icon_pressure', max: 5, extra: 2, baseCost: 500, growth: 1.85, effect: (l) => `bezpečně do ${safeDepthFor(l)} m` },
-  { id: 'thermal', name: 'Termooblek', description: 'Chrání před chladem i žárem', icon: 'icon_thermal', max: 3, extra: 2, baseCost: 700, growth: 1.9, effect: (l) => (l ? `−${Math.round((1 - thermalFor(l)) * 100)} % ztráty teploty` : 'nemáš') },
+  { id: 'ascent', name: 'Vztlaková vesta', description: 'Rychlejší návrat na hladinu', icon: 'icon_vest', max: 3, extra: 2, baseCost: 350, growth: 1.9, story: [3, 7], effect: (l) => `+${Math.round(l * 20)} % výstup` },
+  { id: 'balloon', name: 'Zvedací balón', description: 'Pošle truhlici k hladině', icon: 'balloon', max: 3, extra: 2, baseCost: 450, growth: 1.9, story: [2, 6], effect: (l) => (l ? `${l}× za ponor` : 'nemáš') },
+  { id: 'repellent', name: 'Plašič žraloků', description: 'Odežene žraloky v nouzi', icon: 'icon_repellent', max: 3, extra: 3, baseCost: 380, growth: 1.9, story: [2, 5], effect: (l) => (l ? `${l}× za ponor` : 'nemáš') },
+  { id: 'magnet', name: 'Magnet na mince', description: 'Přitahuje mince z dálky', icon: 'icon_magnet', max: 3, extra: 2, baseCost: 320, growth: 1.9, story: [3, 7], effect: (l) => (l ? `dosah ${Math.round((30 + magnetFor(l) * 2.5) / 10)} m` : 'nemáš') },
+  { id: 'insurance', name: 'Pojištění nákladu', description: 'Při nezdaru vrátí část pokladu', icon: 'icon_insurance', max: 3, extra: 2, baseCost: 600, growth: 2, story: [4, 8], effect: (l) => (l ? `vrátí ${Math.round(insuranceFor(l) * 100)} %` : 'nemáš') },
+  { id: 'medkit', name: 'Lékárnička', description: 'Doplní zdraví během ponoru', icon: 'icon_medkit', max: 3, extra: 2, unlockAt: 1, baseCost: 900, growth: 1.9, story: [3, 7], effect: (l) => (l ? `${l}× za ponor, +${MEDKIT_HEAL} zdraví` : 'nemáš') },
+  { id: 'scooter', name: 'Podvodní skútr', description: 'Krátký rychlý výpad', icon: 'icon_scooter', max: 3, extra: 2, unlockAt: 1, baseCost: 1100, growth: 1.9, story: [6], effect: (l) => (l ? `${scooterFor(l).time.toLocaleString('cs-CZ')} s, nabití ${scooterFor(l).cooldown} s` : 'nemáš') },
+  { id: 'harpoon', name: 'Harpuna', description: 'Jedna rána vyřadí žraloka nebo tvora, bosse na chvíli unaví – pak mu ukradni poklad', icon: 'icon_harpoon', max: 3, extra: 4, baseCost: 700, growth: 1.9, story: [1, 4, 6], effect: (l) => (l ? `${l}× za ponor` : 'nemáš') },
+  { id: 'submarine', name: 'Mini ponorka', description: 'Kotví pod lodí a doplňuje kyslík', icon: 'icon_submarine', max: 3, extra: 2, unlockAt: 2, baseCost: 2500, growth: 1.8, story: [7], effect: (l) => (l ? `stanice v ${submarineDepthM(l)} m` : 'nemáš') },
+  { id: 'pressure', name: 'Tlakový oblek', description: 'Bezpečný ponor do větších hloubek', icon: 'icon_pressure', max: 5, extra: 2, baseCost: 500, growth: 1.85, story: [4, 8], effect: (l) => `bezpečně do ${safeDepthFor(l)} m` },
+  { id: 'thermal', name: 'Termooblek', description: 'Chrání před chladem i žárem', icon: 'icon_thermal', max: 3, extra: 2, baseCost: 700, growth: 1.9, story: [7], effect: (l) => (l ? `−${Math.round((1 - thermalFor(l)) * 100)} % ztráty teploty` : 'nemáš') },
   { id: 'cutter', name: 'Řezák', description: 'Otevře zapečetěné truhly a vraky', icon: 'icon_cutter', max: 2, extra: 1, baseCost: 1400, growth: 2, effect: (l) => (l ? `řez za ${cutTime(l).toLocaleString('cs-CZ')} s` : 'nemáš') },
-  { id: 'camera', name: 'Objektiv fotoaparátu', description: 'Foťák máš od začátku, objektiv přidá dosah a kvalitnější fotky', icon: 'icon_camera', max: 3, extra: 1, baseCost: 350, growth: 1.9, effect: (l) => `dosah ${Math.round(cameraRange(l + 1) / 10)} m` },
-  { id: 'boat', name: 'Lodní motor', description: 'Rychlejší plavba po oceánu', icon: 'icon_engine', max: 5, extra: 2, baseCost: 800, growth: 2.1, effect: (l) => `rychlost ${Math.round(((170 + l * 30) / 170) * 100)} %` },
+  { id: 'camera', name: 'Objektiv fotoaparátu', description: 'Foťák máš od začátku, objektiv přidá dosah a kvalitnější fotky', icon: 'icon_camera', max: 3, extra: 1, baseCost: 350, growth: 1.9, story: [5], effect: (l) => `dosah ${Math.round(cameraRange(l + 1) / 10)} m` },
+  { id: 'boat', name: 'Lodní motor', description: 'Rychlejší plavba po oceánu', icon: 'icon_engine', max: 5, extra: 2, baseCost: 800, growth: 1.9, story: [4, 7], effect: (l) => `rychlost ${Math.round(((170 + l * 30) / 170) * 100)} %` },
   { id: 'drone', name: 'Dron Pip', description: 'Mayin průzkumník: odhalí, donese, naskenuje', icon: 'icon_pip', max: 3, extra: 0, baseCost: 1200, growth: 2.5, expansion: true, effect: (l) => (l ? `úroveň ${l}, dosah ${Math.round(droneRangeFor(l) / 10)} m` : 'získáš v příběhu') },
 ];
 
 export type UpgradeLevels = Record<UpgradeId, number>;
+
+export type SupplyId = keyof Supplies;
+
+export const SUPPLY_LIMIT = 2;
+
+export const SUPPLY_ITEMS: { id: SupplyId; name: string; icon: SpriteName; price: number }[] = [
+  { id: 'harpoon', name: 'Harpuna navíc', icon: 'icon_harpoon', price: 220 },
+  { id: 'balloon', name: 'Balón navíc', icon: 'balloon', price: 180 },
+  { id: 'medkit', name: 'Lékárnička navíc', icon: 'icon_medkit', price: 260 },
+];
+
+export function supplyPrice(id: SupplyId, chapter: number): number {
+  const item = SUPPLY_ITEMS.find((s) => s.id === id)!;
+  return Math.round((item.price * (1 + Math.min(chapter, 8) * 0.35)) / 10) * 10;
+}
 
 export const EMPTY_LEVELS: UpgradeLevels = {
   tank: 0,
@@ -108,13 +124,21 @@ export interface Meta {
 export const NO_META: Meta = { expedition: 0, perks: {} };
 
 export const safeDepthFor = (level: number) => Math.round((80 + level * 45) * DEPTH_SCALE);
-export const thermalFor = (level: number) => Math.max(0.25, 1 - level * 0.18);
+export const thermalFor = (level: number) => (level <= 3 ? 1 - level * 0.18 : 0.46 * Math.pow(0.8, level - 3));
 export const cutTime = (level: number) => Math.max(0.6, 2 - level * 0.5);
 export const cameraRange = photoRange;
 export const droneRangeFor = (level: number) => (level ? 260 + (level - 1) * 80 : 0);
 
-export function maxLevel(def: UpgradeDef, expedition: number): number {
-  return def.max + Math.min(expedition, def.extra);
+export function storyLevels(def: UpgradeDef, chapter: number): number {
+  return (def.story ?? []).filter((c) => chapter >= c).length;
+}
+
+export function maxLevel(def: UpgradeDef, expedition: number, chapter = 0): number {
+  return def.max + Math.min(expedition, def.extra) + storyLevels(def, chapter);
+}
+
+export function nextStoryChapter(def: UpgradeDef, chapter: number): number | null {
+  return (def.story ?? []).find((c) => chapter < c) ?? null;
 }
 
 export function unlocked(def: UpgradeDef, expedition: number): boolean {
@@ -122,11 +146,11 @@ export function unlocked(def: UpgradeDef, expedition: number): boolean {
 }
 
 const oxygenFor = (level: number) => 45 + level * 14;
-const speedFor = (level: number) => 128 + level * 16;
-const armorFor = (level: number) => Math.min(0.6, level * 0.11);
+const speedFor = (level: number) => 128 + Math.min(level, 5) * 16 + Math.max(0, level - 5) * 8;
+const armorFor = (level: number) => Math.min(level, 5) * 0.11 + Math.max(0, level - 5) * 0.025;
 const sonarFor = (level: number) => (level ? 520 + (level - 1) * 280 : 0);
 const magnetFor = (level: number) => level * 24;
-const insuranceFor = (level: number) => (level ? 0.15 + (level - 1) * 0.1 : 0);
+const insuranceFor = (level: number) => (level ? 0.15 + Math.min(level - 1, 2) * 0.1 + Math.max(0, level - 3) * 0.05 : 0);
 
 
 export function upgradeCost(def: UpgradeDef, level: number): number {

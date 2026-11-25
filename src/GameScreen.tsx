@@ -151,6 +151,11 @@ export function GameScreen() {
     if (game.phase !== 'dive') game.diver.oxygen = game.stats.oxygenMax;
   }, [save.upgrades, save.relics, save.skin, save.expedition, save.perks, save.research, save.mods.equipped, boatModules, save.tideEnding]);
 
+  useEffect(() => {
+    const game = gameRef.current;
+    if (game && game.phase === 'boat') game.supplies = { ...save.supplies };
+  }, [save.supplies]);
+
   const showToast = useCallback((text: string, seconds = 2.6) => setToast({ text, until: Date.now() + seconds * 1000 }), []);
 
   const handleEvents = useCallback(
@@ -615,8 +620,13 @@ export function GameScreen() {
           money={save.money}
           levels={save.upgrades}
           expedition={save.expedition}
+          chapter={save.storyChapter}
+          supplies={save.supplies}
           discount={discountFor(save.reputation, 'guild')}
           onBuy={buy}
+          onBuySupply={(id) => {
+            if (progress.buySupply(id)) audio.play('buy');
+          }}
           onBuySkin={(id) => {
             if (progress.buySkin(id)) audio.play('buy');
           }}
@@ -684,7 +694,6 @@ export function GameScreen() {
               onPress={() => {
                 if (progress.buySupplies(merchantPrice)) {
                   audio.play('buy');
-                  if (gameRef.current) gameRef.current.supplies = { medkit: 1, balloon: 1, harpoon: 1 };
                   setMerchant(false);
                 }
               }}

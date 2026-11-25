@@ -56,7 +56,7 @@ export function Modes({ save, width, height, onStart, onClose }: Props) {
             <Text style={styles.text}>{weekly ? `Tvůj rekord týdne: ${weekly.best.toLocaleString('cs-CZ')} $ • ${weekly.depth} m${weekly.rewarded ? ' • perly získány' : ''}` : 'Tento týden zatím bez pokusu.'}</Text>
             <GameButton label="Vyrazit na expedici" size="sm" variant="gold" onPress={() => onStart('weekly')} />
           </Card>
-          <Card icon="icon_trophy" title="Legendární expedice" text="Odvety s bossy: dvakrát víc života, dvojnásobný poklad a legendární materiály." lock={!on ? noExpansion : !legendary ? 'Odemkne se po kapitole 12.' : null}>
+          <Card icon="icon_trophy" title="Legendární expedice" text="Odvety s bossy: o polovinu víc života, dvojnásobný poklad, dvojnásobná trofej a legendární materiály." lock={!on ? noExpansion : !legendary ? 'Odemkne se po kapitole 12.' : null}>
             <View style={styles.wrap}>
               {bosses.map((id) => (
                 <GameButton key={id} label={`${SHARKS[OCEANS[id].boss].name}`} size="xs" variant="navy" onPress={() => onStart('legendary', id)} />

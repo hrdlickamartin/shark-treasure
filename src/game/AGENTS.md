@@ -46,7 +46,7 @@ Akce hráče jsou samostatné funkce volané z UI (`startDive`, `triggerSonar` v
 ## Data místo kódu
 
 - `oceans.ts`: 10 oceánů (`OCEANS`). `OCEAN_ORDER` drží 8 oceánů hlavní kampaně a určuje její kapitoly; oceány rozšíření jsou v `EXPANSION_OCEANS`, mapa a cestování používají `WORLD_OCEANS`. Oceán obsahuje:
-  - regiony (`start`, `baseDepth`, `tier`, `decor`, `landmarks`, `caves`);
+  - regiony (`start`, `baseDepth`, `tier`, `decor`, `landmarks`, `caves`; `tier` řídí raritu truhel i hustotu nepřátel, `lootScale` sníží jen hodnotu truhel);
   - pozadí podle hloubky;
   - bosse a mechaniky (`temperature`, `fog`, `darkness`, `currents`, `puzzle`, `sealed`).
 

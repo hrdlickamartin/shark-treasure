@@ -117,7 +117,7 @@ function hitShark(state: GameState, shark: Shark) {
     shark.timer = 2.5;
     shark.vx *= 0.2;
     shark.vy *= 0.2;
-    floatText(state, `Zásah! Zbývá ${shark.hp}×`, shark.x, shark.y - 70, '#FFBF32');
+    floatText(state, info.boss ? `Unavený! Ukradni poklad (zbývá ${shark.hp}×)` : `Zásah! Zbývá ${shark.hp}×`, shark.x, shark.y - 70, '#FFBF32');
     return;
   }
   shark.dying = info.boss ? BOSS_DEATH_TIME : SHARK_DEATH_TIME;
@@ -127,7 +127,7 @@ function hitShark(state: GameState, shark: Shark) {
   shark.vy = 0;
   floatText(state, info.boss ? `${info.name} poražen!` : 'Zásah!', shark.x, shark.y - 60, '#FFBF32');
   if (info.boss) {
-    state.events.push({ type: 'toast', text: `${info.name} je poražen! Poklad je tvůj.` });
+    state.events.push({ type: 'toast', text: `${info.name} je poražen! Trofej a poklad jsou tvoje.` });
     sfx(state, 'success', 0.9);
   }
 }
@@ -416,7 +416,7 @@ function updateDiscoveries(state: GameState) {
   if (chunk.decor.some((d) => d.sprite === 'wreck' && Math.abs(d.x - diver.x) < 220)) discover(state, 'wreck', 'Potopená loď! Pozor na padající trosky.');
   if (chunk.decor.some((d) => d.sprite === 'ruins' && Math.abs(d.x - diver.x) < 200)) discover(state, 'ruins', 'Starověké ruiny!');
   const ocean = oceanOf(state);
-  if (chunk.boss) discover(state, `boss:${ocean.id}`, `Doupě: ${SHARKS[ocean.boss].name}! Ukradni jeho poklad.`, 'boss');
+  if (chunk.boss) discover(state, `boss:${ocean.id}`, `Doupě: ${SHARKS[ocean.boss].name}! Ukradni poklad, když odpočívá. Harpuna ho unaví.`, 'boss');
   const depth = Math.round(diver.y / PX_PER_M);
   if (depth >= 100) discover(state, 'abyss', 'Hloubka 100 m – vítej v hlubině.');
   discover(state, `loc:${ocean.id}:${chunk.regionId}`, `Nová lokace: ${ocean.regions[chunk.regionId].name}`, 'new_location');

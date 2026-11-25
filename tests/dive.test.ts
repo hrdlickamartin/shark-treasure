@@ -11,7 +11,7 @@ import { regionIndexAt } from '../src/game/regions';
 import { damageDiver } from '../src/game/systems/collision';
 import { SPIKE_OUT } from '../src/game/systems/creatures';
 import { cameraKey, fireHarpoon, fireScooter, healDiver, MEDKIT_HEAL, PHOTO_MODE_TIME } from '../src/game/systems/extras';
-import { canEmbark, embarkSave } from '../src/progression/embark';
+import { canEmbark, embarkChapter, embarkEarnings, embarkSave } from '../src/progression/embark';
 import { shaftPearls, pearlsFor } from '../src/progression/expedition';
 import { CHEST_WEIGHTS, CHESTS } from '../src/game/catalog';
 import { DEFAULT_SAVE, migrateSave, type SaveData } from '../src/progression/saveData';
@@ -296,7 +296,9 @@ function expeditionSave(): SaveData {
 test('nová výprava resetuje peníze, vybavení a mise, ale nechá relikvie a přidá perly', () => {
   const save = expeditionSave();
   assert.equal(canEmbark({ ...save, run: { earned: 90000, boss: false } }), false, 'bez pokladu Megalodona nejde vyplout');
-  assert.equal(canEmbark({ ...save, upgrades: { ...save.upgrades, boat: 4 } }), false, 'bez plné lodi nejde vyplout');
+  assert.equal(canEmbark({ ...save, upgrades: { ...save.upgrades, boat: 0 } }), true, 'loď už není podmínkou');
+  assert.equal(canEmbark({ ...save, storyChapter: 0 }), false, 'bez dokončeného Karibiku nejde vyplout');
+  assert.equal(canEmbark({ ...save, run: { earned: embarkEarnings(0) - 1, boss: true } }), false, 'bez výdělku výpravy nejde vyplout');
   assert.equal(canEmbark(save), true);
   const next = embarkSave(save);
   assert.equal(next.expedition, 1);
@@ -318,7 +320,8 @@ test('výprava zvedá strop vybavení, nebezpečí i hodnotu pokladů', () => {
   const scooter = UPGRADES.find((u) => u.id === 'scooter')!;
   assert.equal(maxLevel(tank, 0), 6);
   assert.equal(maxLevel(tank, 1), 7);
-  assert.equal(maxLevel(tank, 8), 9);
+  assert.equal(maxLevel(tank, 8), 11);
+  assert.equal(maxLevel(tank, 0, 8), 10, 'příběh přidá úrovně i bez nové výpravy');
   assert.equal(maxLevel(boat, 5), 7);
   assert.equal(unlocked(scooter, 0), false);
   assert.equal(unlocked(scooter, 1), true);

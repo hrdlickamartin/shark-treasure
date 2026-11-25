@@ -329,6 +329,7 @@ export interface Diver {
 
 export interface DiveRecord {
   startTime: number;
+  supplies: Supplies;
   maxDepth: number;
   hits: number;
   regionMax: number;

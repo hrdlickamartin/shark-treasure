@@ -129,6 +129,7 @@ export function startDive(state: GameState) {
   diver.medkits += state.supplies.medkit;
   diver.balloons += state.supplies.balloon;
   diver.harpoons += state.supplies.harpoon;
+  const supplies = { ...state.supplies };
   state.supplies = { medkit: 0, balloon: 0, harpoon: 0 };
   state.sub = submarineSpot(state);
   diver.breathing = true;
@@ -143,6 +144,7 @@ export function startDive(state: GameState) {
   state.lastDamage = null;
   state.alarmTimer = 0;
   state.record = newRecord(state.time, diver.x, regionIndexAt(oceanOf(state).regions, diver.x));
+  state.record.supplies = supplies;
   diver.anchor = 0;
   diver.immune = 0;
   diver.tow = false;
@@ -285,6 +287,7 @@ export function finishDive(state: GameState, success: boolean) {
   diver.health = MAX_HEALTH;
   if (quick) {
     state.phase = 'boat';
+    state.supplies = { ...state.record.supplies };
     return;
   }
   state.phase = 'result';

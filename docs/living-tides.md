@@ -57,7 +57,7 @@ Nativní gamepad (vyžaduje nativní modul), skutečný online žebříček týd
 - Hudba: místo dynamických vrstev jen dvě ambientní smyčky (`amb_riptide`, `amb_reef`) přepínané podle oceánu.
 - Strážce trhlin nemá čtyřfázový souboj; nad úlomkem a srdečním kamenem se zjevuje jeho ozvěna jako silueta.
 - Dutá ulita nemá mírumilovné řešení, poráží se přes řetězy a slabé místo.
-- Legendární expedice jsou bossové s dvojnásobným životem a dvojnásobným pokladem, bez nových útoků.
+- Legendární expedice jsou bossové s životem ×1,5 a dvojnásobným pokladem i trofejí, bez nových útoků.
 - Dozvuky konců jsou střídmé: „Sklizeň“ zvedá kyslík, nebezpečí i rychlost žraloků o 10 %, „Doprovod“ přidá 5 % k lupu, „Spánek“ zastaví nové trhliny.
 - Rookovy závody jsou dva, ne čtyři.
 - Rádiová věž je na přídi lodi; dekompresní komora místo léčení po ponoru snižuje poškození o 8 % a zrychluje výstup o 15 %.

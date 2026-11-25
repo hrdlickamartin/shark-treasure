@@ -7,6 +7,7 @@
   - determinismus generování (i pro záporné indexy úseků);
   - jeskyně a kapsy, tvorové, vybavení a harpuna;
   - režim `endless`, výpravy, migrace save, hustota nepřátel.
+- `balance.test.ts`: vyvážení – každá úroveň vylepšení něco zlepší, ceny úrovní z příběhu proti výdělku oceánu, harpuny proti životům bossů, trofeje, podmínky výpravy, zásoby, odměny lokací (simulace přes `generateChunk`).
 - `oceans.test.ts`: všech 8 oceánů a mechaniky prostředí (tlak, teplota), questy, příběh a konce, migrace savů ze starších verzí a **testy férovosti**: s doporučenou výbavou musí jít doplout ke questovým cílům a vrátit se.
 
 ## Jak psát test

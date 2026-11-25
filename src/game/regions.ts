@@ -16,6 +16,7 @@ export interface Region {
   sandDark: string;
   sandEdge: string;
   tier: number;
+  lootScale?: number;
   decor: string[];
   front?: string[];
   landmarks: Landmark[];

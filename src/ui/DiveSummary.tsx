@@ -79,7 +79,8 @@ export function DiveSummary({ summary, onContinue, onShop, maxHeight, pendingSha
   const { result, missions, missionReward } = summary;
   const endless = result.mode === 'endless';
   const paid = result.success || endless;
-  const total = useCountUp(result.total + missionReward + summary.questReward + summary.levelReward);
+  const trophyMoney = summary.trophies.reduce((sum, t) => sum + t.money, 0);
+  const total = useCountUp(result.total + missionReward + summary.questReward + summary.levelReward + trophyMoney);
   const [pop] = useState(() => new Animated.Value(0));
   const [bob] = useState(() => new Animated.Value(0));
 
@@ -130,6 +131,16 @@ export function DiveSummary({ summary, onContinue, onShop, maxHeight, pendingSha
                 <Text style={styles.sub}>Záchranáři tě vytáhli na loď. Peníze ani vylepšení neztrácíš.</Text>
               </>
             )}
+            {summary.trophies.map((t) => (
+              <Text key={t.boss} style={styles.questStep}>
+                Trofej: {SHARKS[t.boss].name} poražen{t.first ? ' poprvé' : ''}: +{t.money.toLocaleString('cs-CZ')} ${t.first ? ' • +1 perla • +40 dat' : ''}
+              </Text>
+            ))}
+            {summary.questSteps.map((st) => (
+              <Text key={`${st.quest.id}:${st.label}`} style={styles.questStep}>
+                ✓ {st.label} • {st.quest.title} {st.done}/{st.quest.steps.length}
+              </Text>
+            ))}
             <SpeakerLine line={radioLine(paid ? 'success' : 'fail', result.duration * 7) ?? { who: 'maya', text: '' }} compact />
             {summary.quests.map((q) => (
               <View key={q.id} style={styles.story}>
@@ -142,11 +153,6 @@ export function DiveSummary({ summary, onContinue, onShop, maxHeight, pendingSha
                   </Text>
                 </View>
               </View>
-            ))}
-            {summary.questSteps.map((st) => (
-              <Text key={`${st.quest.id}:${st.label}`} style={styles.questStep}>
-                ✓ {st.label} • {st.quest.title} {st.done}/{st.quest.steps.length}
-              </Text>
             ))}
             {summary.unlocked.length > 0 && <Text style={styles.boss}>Nový oceán na mapě: {summary.unlocked.map((o) => OCEANS[o].czech).join(', ')}</Text>}
             <View style={styles.progressRow}>

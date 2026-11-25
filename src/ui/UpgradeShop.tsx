@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
-import type { SkinId } from '../game/types';
+import { OCEAN_ORDER, OCEANS } from '../game/oceans';
+import type { SkinId, Supplies } from '../game/types';
 import { SKINS, skinned } from '../progression/skins';
-import { maxLevel, unlocked, UPGRADES, upgradeCost, type UpgradeId, type UpgradeLevels } from '../progression/upgrades';
+import { maxLevel, nextStoryChapter, SUPPLY_ITEMS, SUPPLY_LIMIT, supplyPrice, unlocked, UPGRADES, upgradeCost, type SupplyId, type UpgradeDef, type UpgradeId, type UpgradeLevels } from '../progression/upgrades';
 import { Icon } from '../render/Sprite';
 import { GameButton } from './Button';
 import { MoneyPill, Overlay, Panel, Title } from './Panel';
@@ -12,7 +13,10 @@ interface Props {
   money: number;
   levels: UpgradeLevels;
   expedition: number;
+  chapter: number;
+  supplies: Supplies;
   onBuy: (id: UpgradeId) => void;
+  onBuySupply: (id: SupplyId) => void;
   onBuySkin: (id: SkinId) => void;
   skins: SkinId[];
   skin: SkinId;
@@ -22,7 +26,7 @@ interface Props {
   discount?: number;
 }
 
-export function UpgradeShop({ money, levels, expedition, onBuy, onBuySkin, skins, skin, onClose, width, height, discount = 1 }: Props) {
+export function UpgradeShop({ money, levels, expedition, chapter, supplies, onBuy, onBuySupply, onBuySkin, skins, skin, onClose, width, height, discount = 1 }: Props) {
   const [tab, setTab] = useState<'gear' | 'skins'>('gear');
   const columns = width > 900 ? 4 : width > 560 ? 2 : 1;
   const cardWidth = Math.min(220, (Math.min(width - 60, 960) - (columns - 1) * 10) / columns);
@@ -61,7 +65,7 @@ export function UpgradeShop({ money, levels, expedition, onBuy, onBuySkin, skins
             })}
           {tab === 'gear' && UPGRADES.filter((def) => !def.expansion || levels[def.id] > 0).map((def) => {
             const level = levels[def.id];
-            const max = maxLevel(def, expedition);
+            const max = maxLevel(def, expedition, chapter);
             const open = unlocked(def, expedition);
             const maxed = level >= max;
             const cost = Math.round(upgradeCost(def, level) * discount);
@@ -78,7 +82,7 @@ export function UpgradeShop({ money, levels, expedition, onBuy, onBuySkin, skins
                   </View>
                 </View>
                 <View style={styles.levels}>
-                  {Array.from({ length: def.max + def.extra }, (_, i) => (
+                  {Array.from({ length: def.max + def.extra + (def.story?.length ?? 0) }, (_, i) => (
                     <View key={i} style={[styles.pip, i < level && styles.pipOn, i >= max && styles.pipLocked]} />
                   ))}
                 </View>
@@ -86,7 +90,7 @@ export function UpgradeShop({ money, levels, expedition, onBuy, onBuySkin, skins
                   {def.effect(level)}
                   {!maxed ? `  →  ${def.effect(level + 1)}` : ''}
                 </Text>
-                {open && maxed && max < def.max + def.extra && <Text style={styles.unlock}>Další úroveň na příští výpravě</Text>}
+                {open && maxed && <NextLevel def={def} expedition={expedition} chapter={chapter} />}
                 <GameButton
                   label={!open ? `Od ${(def.unlockAt ?? 0) + 1}. výpravy` : maxed ? 'MAX' : `${cost.toLocaleString('cs-CZ')} $`}
                   variant={open && !maxed && affordable ? 'green' : 'navy'}
@@ -98,11 +102,46 @@ export function UpgradeShop({ money, levels, expedition, onBuy, onBuySkin, skins
               </View>
             );
           })}
+          {tab === 'gear' && (
+            <View style={[styles.card, styles.supplies]}>
+              <Text style={styles.name}>Zásoby na příští ponor</Text>
+              <Text style={styles.desc}>Spotřebují se v dalším ponoru, od každé nejvýš {SUPPLY_LIMIT} kusy.</Text>
+              <View style={styles.supplyRow}>
+                {SUPPLY_ITEMS.map((item) => {
+                  const price = supplyPrice(item.id, chapter);
+                  const full = supplies[item.id] >= SUPPLY_LIMIT;
+                  return (
+                    <View key={item.id} style={styles.supply}>
+                      <Icon name={item.icon} size={30} />
+                      <Text style={styles.effect}>
+                        {item.name} {supplies[item.id]}/{SUPPLY_LIMIT}
+                      </Text>
+                      <GameButton
+                        label={full ? 'Plno' : `${price.toLocaleString('cs-CZ')} $`}
+                        variant={!full && money >= price ? 'green' : 'navy'}
+                        size="xs"
+                        disabled={full || money < price}
+                        silent
+                        onPress={() => onBuySupply(item.id)}
+                      />
+                    </View>
+                  );
+                })}
+              </View>
+            </View>
+          )}
         </ScrollView>
         <GameButton label="Zpět" variant="blue" onPress={onClose} style={styles.back} />
       </Panel>
     </Overlay>
   );
+}
+
+function NextLevel({ def, expedition, chapter }: { def: UpgradeDef; expedition: number; chapter: number }) {
+  const story = nextStoryChapter(def, chapter);
+  if (story !== null) return <Text style={styles.unlock}>Další úroveň: dokonči kapitolu {OCEANS[OCEAN_ORDER[story - 1]].czech}</Text>;
+  if (expedition < def.extra) return <Text style={styles.unlock}>Další úroveň na příští výpravě</Text>;
+  return null;
 }
 
 const styles = StyleSheet.create({
@@ -126,4 +165,7 @@ const styles = StyleSheet.create({
   effect: { color: COLORS.white, fontFamily: FONTS.body, fontSize: 11 },
   unlock: { color: COLORS.aqua, fontFamily: FONTS.bodyHeavy, fontSize: 11 },
   back: { alignSelf: 'center' },
+  supplies: { width: '100%', maxWidth: 700 },
+  supplyRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'space-around' },
+  supply: { alignItems: 'center', gap: 4, minWidth: 110 },
 });

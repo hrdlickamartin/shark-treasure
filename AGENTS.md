@@ -20,7 +20,7 @@ Než upravíš kód v adresáři, přečti jeho `AGENTS.md`:
 - `tools/assets/` – pipeline spritů a pozadí → [`tools/assets/AGENTS.md`](tools/assets/AGENTS.md)
 - `tests/` – testy enginu a progrese → [`tests/AGENTS.md`](tests/AGENTS.md)
 
-Ostatní: `src/GameScreen.tsx` (orchestrátor), `src/hooks/` (herní smyčka, `Live`, klávesnice, gamepad), `src/audio/audio.ts` (hudba, efekty a ambient biomů přes `expo-audio`), `docs/` (plány rozšíření a rozhodnutí: `lost-oceans.md`, `story-bible.md`, `living-tides.md`; ruční testovací scénáře v `docs/test-cases/`). PDF v kořeni jsou zdrojové GDD, Story Bible a grafický manuál.
+Ostatní: `src/GameScreen.tsx` (orchestrátor), `src/hooks/` (herní smyčka, `Live`, klávesnice, gamepad), `src/audio/audio.ts` (hudba, efekty a ambient biomů přes `expo-audio`), `docs/` (plány rozšíření a rozhodnutí: `lost-oceans.md`, `story-bible.md`, `living-tides.md`; analýza vyvážení ekonomiky, bossů a obtížnosti `balance.md`; ruční testovací scénáře v `docs/test-cases/`). PDF v kořeni jsou zdrojové GDD, Story Bible a grafický manuál.
 
 ## Architektura
 

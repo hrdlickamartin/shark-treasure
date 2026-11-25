@@ -17,7 +17,7 @@ import { canResearch, RESEARCH } from './research';
 import { EXPANSION_FLAG, expansionIntro, type Ending, type TideEnding } from './saveData';
 import { endingAvailable, ENDINGS, TIDE_ENDINGS } from './story';
 import { PERKS, perkCost, perkLevel, type PerkId } from './expedition';
-import { maxLevel, unlocked, UPGRADES, upgradeCost, type UpgradeId } from './upgrades';
+import { maxLevel, SUPPLY_LIMIT, supplyPrice, unlocked, UPGRADES, upgradeCost, type SupplyId, type UpgradeId } from './upgrades';
 
 export type { ResultSummary } from './progress';
 
@@ -45,7 +45,7 @@ export function useProgress() {
       const current = saveRef.current;
       const def = UPGRADES.find((u) => u.id === id)!;
       const level = current.upgrades[id];
-      if (level >= maxLevel(def, current.expedition) || !unlocked(def, current.expedition) || (def.expansion && level === 0)) return false;
+      if (level >= maxLevel(def, current.expedition, current.storyChapter) || !unlocked(def, current.expedition) || (def.expansion && level === 0)) return false;
       const cost = Math.round(upgradeCost(def, level) * discountFor(current.reputation, 'guild'));
       if (current.money < cost) return false;
       commit({ ...current, money: current.money - cost, upgrades: { ...current.upgrades, [id]: level + 1 } });
@@ -89,6 +89,17 @@ export function useProgress() {
     (amount: number) => {
       const current = saveRef.current;
       commit({ ...current, money: current.money + amount, stats: { ...current.stats, totalEarned: current.stats.totalEarned + amount } });
+    },
+    [commit],
+  );
+
+  const buySupply = useCallback(
+    (id: SupplyId): boolean => {
+      const current = saveRef.current;
+      const price = supplyPrice(id, current.storyChapter);
+      if (current.money < price || current.supplies[id] >= SUPPLY_LIMIT) return false;
+      commit({ ...current, money: current.money - price, supplies: { ...current.supplies, [id]: current.supplies[id] + 1 } });
+      return true;
     },
     [commit],
   );
@@ -216,5 +227,5 @@ export function useProgress() {
     commit({ ...DEFAULT_SAVE, settings: saveRef.current.settings });
   }, [commit]);
 
-  return { save, loaded, buy, buySkin, buyPerk, embark, applyResult, learn, travel, addMoney, buySupplies, chooseEnding, dismissDialog, choose, updateSettings, markTutorial, reset, craftItem, setMod, purchaseModule, setModule, handOver, claim, buyMap, foundBottle, chooseTideEnding };
+  return { save, loaded, buy, buySkin, buyPerk, embark, applyResult, learn, travel, addMoney, buySupplies, buySupply, chooseEnding, dismissDialog, choose, updateSettings, markTutorial, reset, craftItem, setMod, purchaseModule, setModule, handOver, claim, buyMap, foundBottle, chooseTideEnding };
 }

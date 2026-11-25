@@ -40,7 +40,7 @@ Vrací nový save a `ResultSummary` pro obrazovku výsledku. Volby v dialozích 
 
 | Soubor | Obsah |
 |---|---|
-| `upgrades.ts` | `UPGRADES` (cena `baseCost · growth^level`; strop `max` se každou výpravou zvedne o 1, nejvýš o `extra`; `unlockAt` = od které výpravy je k dispozici) a `statsFor()`, které skládá `Stats` pro engine z vylepšení, relikvií, výzvy, výpravy, perků a výzkumu |
+| `upgrades.ts` | `UPGRADES` (cena `baseCost · growth^level`; strop `max` se každou výpravou zvedne o 1, nejvýš o `extra`, a o další úroveň v každé kapitole ze `story`; `unlockAt` = od které výpravy je k dispozici; zásoby na příští ponor `SUPPLY_ITEMS`). Strop vždy přes `maxLevel(def, expedition, storyChapter)`. Každá koupitelná úroveň musí změnit `Stats` a cena úrovně z příběhu nesmí přesáhnout 8 ponorů daného oceánu, hlídá `tests/balance.test.ts`; čísla a důvody v `docs/balance.md` a `statsFor()`, které skládá `Stats` pro engine z vylepšení, relikvií, výzvy, výpravy, perků a výzkumu |
 | `quests.ts` | `QUESTS`: kategorie `main / maya / side / challenge`, více cílů (`steps`) v libovolném pořadí, řetězy přes `requires`, příznaky `needsFlag`, volby `choice`; pozice předmětů `itemX` podle oceánu a regionu |
 | `characters.ts`, `dialogue.ts` | postavy s portréty, dialogy na lodi podle id, rádiové hlášky podle tématu |
 | `story.ts` | konce příběhu a jejich podmínky |

@@ -143,7 +143,7 @@ export const TIDE_QUESTS: QuestDef[] = [
     requires: ['rt_harlan'],
     chapterEnd: true,
     unlocks: 'wandering',
-    steps: [{ kind: 'boss', label: 'Poraz Vládce proudů a vynes jeho poklad' }],
+    steps: [{ kind: 'boss', label: 'Vynes poklad Vládce proudů' }],
     reward: r(9000, 500, 90, 4, { materials: { rope: 4, alloy: 2 } }),
     briefing: [
       { who: 'maya', text: 'Obří úhoř, který jezdí po proudech. Při přílivu se od něj harpuna odrazí.' },
@@ -284,7 +284,7 @@ export const TIDE_QUESTS: QuestDef[] = [
     title: 'Dutá ulita',
     brief: 'Obří krab s galeonou místo ulity zraňuje Strážce. Přetni řetězy a zasáhni ho.',
     requires: ['wr_wounds'],
-    steps: [{ kind: 'boss', label: 'Poraz Dutou ulitu a vynes její poklad' }],
+    steps: [{ kind: 'boss', label: 'Vynes poklad Duté ulity' }],
     reward: r(11000, 600, 110, 4, { materials: { nacre: 4, biogel: 3 } }),
     briefing: [{ who: 'maya', text: 'Ulita je neprůstřelná. Tři kotevní řetězy ji drží – přetni je řezákem a pak míř na kraba.' }],
     debrief: [

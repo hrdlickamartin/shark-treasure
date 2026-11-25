@@ -1,10 +1,23 @@
+import { OCEAN_ORDER } from '../game/oceans';
 import { pearlsFor, perkLevel } from './expedition';
 import type { SaveData } from './saveData';
 import { EMPTY_LEVELS, maxLevel, unlocked, UPGRADES, type UpgradeLevels } from './upgrades';
 
+export const embarkChapter = (expedition: number) => Math.min(OCEAN_ORDER.length, expedition + 1);
+
+export const embarkEarnings = (expedition: number) => 20000 + expedition * 15000;
+
+export function embarkRequirements(save: SaveData) {
+  return {
+    chapter: save.storyChapter >= embarkChapter(save.expedition),
+    boss: save.run.boss,
+    earned: save.run.earned >= embarkEarnings(save.expedition),
+  };
+}
+
 export function canEmbark(save: SaveData): boolean {
-  const boat = UPGRADES.find((u) => u.id === 'boat')!;
-  return save.upgrades.boat >= maxLevel(boat, save.expedition) && save.run.boss;
+  const req = embarkRequirements(save);
+  return req.chapter && req.boss && req.earned;
 }
 
 export function embarkSave(save: SaveData): SaveData {

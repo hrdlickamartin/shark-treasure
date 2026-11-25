@@ -4,7 +4,7 @@ import { OCEAN_ORDER, weekIndex, type OceanId } from '../game/oceans';
 import { addReputation, FACTION_IDS } from './factions';
 import { equipped } from './modules';
 import { activeModules, applyTideDive, expansionOn, hasFlag } from './tides';
-import type { DiveResult, RelicId } from '../game/types';
+import type { DiveResult, RelicId, SharkKind } from '../game/types';
 import type { CharacterId } from './characters';
 import { dialogueFor } from './dialogue';
 import { applyPhotos } from './encyclopedia';
@@ -16,6 +16,26 @@ import type { SaveData } from './saveData';
 import { maxLevel, UPGRADES } from './upgrades';
 
 const MAX_BRIEFS = 3;
+
+export const BOSS_TROPHIES: Partial<Record<SharkKind, number>> = { mega: 1500, leviathan: 2500, maelstrom: 4000, abyssal: 5000, hollow: 5000 };
+export const REPEAT_TROPHY = 0.3;
+
+export interface Trophy {
+  boss: SharkKind;
+  money: number;
+  first: boolean;
+}
+
+export function bossTrophies(discoveries: string[], result: DiveResult): Trophy[] {
+  const bosses = [...new Set(result.discoveries.filter((d) => d.startsWith('defeated:')).map((d) => d.slice('defeated:'.length) as SharkKind))];
+  return bosses.flatMap((boss) => {
+    const value = BOSS_TROPHIES[boss];
+    if (!value) return [];
+    const first = !discoveries.includes(`defeated:${boss}`);
+    const scale = result.variant === 'legendary' ? 2 : 1;
+    return [{ boss, money: Math.round((first ? value : value * REPEAT_TROPHY) * scale), first }];
+  });
+}
 
 export interface QuestStepDone {
   quest: QuestDef;
@@ -32,6 +52,7 @@ export interface ResultSummary {
   shaftRecord: boolean;
   quests: QuestDef[];
   questSteps: QuestStepDone[];
+  trophies: Trophy[];
   questReward: number;
   photos: string[];
   xp: number;
@@ -122,7 +143,7 @@ export function settle(before: SaveData, incoming: Record<string, SaveData['ques
     if (quest.reward.flag) flags.add(quest.reward.flag);
     if (quest.reward.upgrade) {
       const def = UPGRADES.find((u) => u.id === quest.reward.upgrade!.id)!;
-      upgrades[def.id] = Math.min(maxLevel(def, before.expedition), upgrades[def.id] + quest.reward.upgrade.levels);
+      upgrades[def.id] = Math.min(maxLevel(def, before.expedition, before.storyChapter), upgrades[def.id] + quest.reward.upgrade.levels);
     }
     if (quest.reward.materials) materials = addCounts(materials, quest.reward.materials);
     if (quest.reward.kit) kit = addCounts(kit, quest.reward.kit);
@@ -186,19 +207,22 @@ export function applyDive(current: SaveData, result: DiveResult): { save: SaveDa
     }
   }
   const photos = applyPhotos(current.encyclopedia, result.photos);
+  const trophies = endless || free ? [] : bossTrophies(current.discoveries, result);
+  const trophyMoney = trophies.reduce((sum, t) => sum + t.money, 0);
+  const trophyFirsts = trophies.filter((t) => t.first).length;
   const newRelics = result.relics.filter((r) => !current.relics.includes(r));
   const newPlaces = result.discoveries.filter((d) => d.startsWith('loc:') && !current.discoveries.includes(d));
-  const diveResearch = photos.reward.research + newPlaces.length * 8 + newRelics.length * 20;
+  const diveResearch = photos.reward.research + newPlaces.length * 8 + newRelics.length * 20 + trophyFirsts * 40;
   const aquarium = equipped(activeModules(current), 'aquarium') ? 1.05 : 1;
   const diveXp = Math.round(result.maxDepthM / 2) + (result.success ? result.chests.length * 10 : 0) + newPlaces.length * 15 + Math.round(photos.reward.xp * aquarium) + missions.completed.length * 20;
 
   const base: SaveData = {
     ...current,
-    money: current.money + result.total + missionReward,
+    money: current.money + result.total + missionReward + trophyMoney,
     encyclopedia: photos.book,
     researchData: current.researchData + diveResearch,
     xp: current.xp + diveXp,
-    pearls: current.pearls + (endless ? shaftPearls(current.shaftBest, result.maxDepthM) : 0),
+    pearls: current.pearls + (endless ? shaftPearls(current.shaftBest, result.maxDepthM) : 0) + trophyFirsts,
     supplies: { medkit: 0, balloon: 0, harpoon: 0 },
     kit: free ? addCounts(current.kit, result.kitUsed, -1) : current.kit,
     shaftBest: endless ? Math.max(current.shaftBest, result.maxDepthM) : current.shaftBest,
@@ -227,7 +251,7 @@ export function applyDive(current: SaveData, result: DiveResult): { save: SaveDa
   const levelUps = Array.from({ length: afterLevel - beforeLevel }, (_, i) => beforeLevel + i + 1);
   const levelMoney = levelUps.reduce((sum, l) => sum + levelReward(l).money, 0);
   const levelPearls = levelUps.reduce((sum, l) => sum + levelReward(l).pearls, 0);
-  const earned = result.total + missionReward + settled.money + levelMoney;
+  const earned = result.total + missionReward + trophyMoney + settled.money + levelMoney;
   const save: SaveData = {
     ...settled.save,
     money: settled.save.money + levelMoney,
@@ -246,6 +270,7 @@ export function applyDive(current: SaveData, result: DiveResult): { save: SaveDa
       shaftPearls: endless ? shaftPearls(current.shaftBest, result.maxDepthM) : 0,
       shaftRecord: endless && result.maxDepthM > current.shaftBest,
       quests: settled.completed,
+      trophies,
       questSteps: steps.filter((st) => !settled.completed.includes(st.quest)),
       questReward: settled.money,
       photos: photos.reward.improved,

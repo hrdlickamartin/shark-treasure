@@ -1,7 +1,7 @@
 import type { DiveRecord, Drone } from './types';
 
 export function newRecord(time: number, x: number, regionMax: number): DiveRecord {
-  return { startTime: time, maxDepth: 0, hits: 0, regionMax, fullWarned: -10, pockets: 0, balloonsSent: 0, minX: x, maxX: x, discoveries: [], photos: [], activated: [], cut: 0, materials: {}, scans: [], kitUsed: {}, escapes: 0, gates: 0, heavy: 0 };
+  return { startTime: time, supplies: { medkit: 0, balloon: 0, harpoon: 0 }, maxDepth: 0, hits: 0, regionMax, fullWarned: -10, pockets: 0, balloonsSent: 0, minX: x, maxX: x, discoveries: [], photos: [], activated: [], cut: 0, materials: {}, scans: [], kitUsed: {}, escapes: 0, gates: 0, heavy: 0 };
 }
 
 export function newDrone(x: number, y: number): Drone {

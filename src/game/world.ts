@@ -1,7 +1,7 @@
 import type { SpriteName } from '../render/spriteAssets';
 import { CHEST_CHANCE, CHEST_WEIGHTS, CHESTS, SHARK_HUNTER_CHANCE, SHARK_KINDS_BY_REGION, SHARKS } from './catalog';
 import { CHUNK_W, SURFACE_SAFE } from './constants';
-import { bossChunks, oceanOf } from './oceans';
+import { bossChunks, OCEAN_ORDER, oceanOf, type OceanId } from './oceans';
 import { DEFAULT_FRONT, regionIndexAt, type Region } from './regions';
 import { between, hash, mulberry32, pick, type Rng, weighted } from './rng';
 import { seabedY } from './terrain';
@@ -58,7 +58,7 @@ function chestKindFor(r: Rng, regionId: number): ChestKind {
 function createChest(r: Rng, seed: number, regions: Region[], id: string, x: number, kind: ChestKind, regionId: number): Chest {
   const info = CHESTS[kind];
   const restY = seabedY(seed, x, regions) - info.width * 0.32;
-  const scale = kind === 'heavy' ? 1 + regions[regionId].tier * 0.3 : 1;
+  const scale = (kind === 'heavy' ? 1 + regions[regionId].tier * 0.3 : 1) * (regions[regionId].lootScale ?? 1);
   return {
     id,
     kind,
@@ -111,6 +111,13 @@ export function newShark(id: string, kind: SharkKind, x: number, y: number, rang
 
 export function newHazard(id: string, kind: HazardKind, x: number, y: number, extra: Partial<Hazard> = {}): Hazard {
   return { id, kind, x, y, homeX: x, baseY: y, anchorY: y, size: 0, angle: 0, phase: 0, alive: true, dir: 1, timer: 0, cooldown: 0, state: 0, vx: 0, vy: 0, link: null, ...extra };
+}
+
+export const LEGENDARY_HP = 1.5;
+
+export function bossChestValue(ocean: OceanId): number {
+  const index = OCEAN_ORDER.indexOf(ocean);
+  return 3000 + (index < 0 ? OCEAN_ORDER.length : index) * 1000;
 }
 
 export const isBossChunk = (state: GameState, index: number) => (state.variant === 'legendary' ? index === 3 || index === -4 : bossChunks(oceanOf(state)).includes(index));
@@ -300,7 +307,7 @@ export function generateChunk(state: GameState, index: number): Chunk {
   if (boss) {
     const chest = createChest(r, seed, regions, `${index}:boss`, x0 + CHUNK_W * 0.55, 'legendary', regionId);
     chest.boss = true;
-    chest.value = 6000;
+    chest.value = bossChestValue(ocean.id);
     state.chests.push(chest);
     const bossShark = newShark(`${index}:boss`, ocean.boss, chest.x + 200, chest.y - 150, 260, true, r() * 10);
     if (ocean.boss === 'maelstrom') {
@@ -314,7 +321,7 @@ export function generateChunk(state: GameState, index: number): Chunk {
       bossShark.y = chest.y - 40;
     }
     if (state.variant === 'legendary') {
-      bossShark.hp *= 2;
+      bossShark.hp = Math.floor(bossShark.hp * LEGENDARY_HP);
       bossShark.maxHp = bossShark.hp;
       chest.value *= 2;
     }
