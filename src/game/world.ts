@@ -39,7 +39,7 @@ const DECOR: Record<string, DecorSpec> = {
   ice_block: { sprite: 'ice_block', min: 90, max: 140, sway: 0, sink: 14 },
   ice_crystal: { sprite: 'ice_crystal', min: 50, max: 80, sway: 0, sink: 6 },
   amphora: { sprite: 'amphora', min: 36, max: 52, sway: 0, sink: 6 },
-  marble_column: { sprite: 'marble_column', min: 90, max: 140, sway: 0, sink: 10 },
+  marble_column: { sprite: 'marble_column', min: 80, max: 124, sway: 0, sink: 10 },
   giant_kelp: { sprite: 'giant_kelp', min: 120, max: 200, sway: 0.6, sink: 6 },
   ghost_ship: { sprite: 'ghost_ship', min: 420, max: 480, sway: 0, sink: 40 },
   cave_crystal: { sprite: 'cave_crystal', min: 34, max: 56, sway: 0, sink: 6 },

@@ -129,7 +129,7 @@ export const SPRITES = {
   logo: { source: require('../../assets/sprites/logo.png'), aspect: 1.4605 },
   maelstrom_eel: { source: require('../../assets/sprites/maelstrom_eel.png'), aspect: 2.1757 },
   map_fragment: { source: require('../../assets/sprites/map_fragment.png'), aspect: 1.2121 },
-  marble_column: { source: require('../../assets/sprites/marble_column.png'), aspect: 0.5269 },
+  marble_column: { source: require('../../assets/sprites/marble_column.png'), aspect: 0.4654 },
   mat_alloy: { source: require('../../assets/sprites/mat_alloy.png'), aspect: 1.3196 },
   mat_biogel: { source: require('../../assets/sprites/mat_biogel.png'), aspect: 0.6875 },
   mat_ice: { source: require('../../assets/sprites/mat_ice.png'), aspect: 0.875 },
