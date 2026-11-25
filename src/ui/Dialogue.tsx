@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { CHARACTERS, type Line } from '../progression/characters';
 import type { Dialogue as DialogueDef } from '../progression/dialogue';
+import type { Requirement } from '../progression/progress';
 import { Icon } from '../render/Sprite';
 import { GameButton } from './Button';
 import { COLORS, FONTS, textShadow } from './theme';
@@ -12,6 +13,7 @@ interface Props {
   width: number;
   bottom: number;
   canChoose: (needs?: string[]) => boolean;
+  requirements: (needs: string[] | undefined, cost: number) => Requirement[];
   money: number;
   onChoose: (optionId: string) => Line[] | null;
   onDone: () => void;
@@ -33,7 +35,7 @@ export function SpeakerLine({ line, compact, big }: { line: Line; compact?: bool
   );
 }
 
-export function DialogueBox({ dialogue, width, bottom, canChoose, money, onChoose, onDone, big }: Props) {
+export function DialogueBox({ dialogue, width, bottom, canChoose, requirements, money, onChoose, onDone, big }: Props) {
   const [index, setIndex] = useState(0);
   const [outcome, setOutcome] = useState<Line[] | null>(null);
   const lines = outcome ?? dialogue.lines;
@@ -56,10 +58,11 @@ export function DialogueBox({ dialogue, width, bottom, canChoose, money, onChoos
         <View style={styles.choices}>
           {dialogue.choice!.options.map((option) => {
             const allowed = canChoose(option.needsFlag) && (option.money ?? 0) + money >= 0;
+            const missing = allowed ? [] : requirements(option.needsFlag, -(option.money ?? 0)).filter((r) => !r.done);
             return (
+              <View key={option.id} style={styles.choice}>
               <GameButton
-                key={option.id}
-                label={allowed ? option.label : `${option.label} – nedostupné`}
+                label={allowed ? option.label : `${option.label} (zamčeno)`}
                 size="sm"
                 variant={allowed ? 'blue' : 'navy'}
                 disabled={!allowed}
@@ -70,6 +73,12 @@ export function DialogueBox({ dialogue, width, bottom, canChoose, money, onChoos
                   setIndex(0);
                 }}
               />
+              {missing.map((r) => (
+                <Text key={r.label} style={styles.missing}>
+                  ✗ {r.label}
+                </Text>
+              ))}
+              </View>
             );
           })}
         </View>
@@ -98,7 +107,9 @@ const styles = StyleSheet.create({
   textSmall: { fontSize: 12, lineHeight: 16 },
   textBig: { fontSize: 17, lineHeight: 23 },
   hint: { color: COLORS.muted, fontFamily: FONTS.bodyHeavy, fontSize: 11, textAlign: 'right' },
-  choices: { gap: 6, alignItems: 'stretch' },
+  choices: { gap: 6, alignItems: 'stretch', backgroundColor: 'rgba(4, 27, 61, 0.9)', borderRadius: 16, padding: 8 },
+  choice: { gap: 2 },
+  missing: { color: COLORS.coral, fontFamily: FONTS.bodyHeavy, fontSize: 12, textAlign: 'center', ...textShadow },
   radioLeft: { alignSelf: 'auto' },
   radio: { position: 'absolute', alignSelf: 'center', backgroundColor: 'rgba(4, 27, 61, 0.88)', borderRadius: 16, borderWidth: 1.5, borderColor: COLORS.aqua, paddingVertical: 6, paddingHorizontal: 10 },
 });

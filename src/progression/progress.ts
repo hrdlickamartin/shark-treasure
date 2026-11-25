@@ -1,7 +1,7 @@
 import { addCounts, type MaterialCounts } from '../game/gear';
 import { todayKey } from '../game/modifiers';
 import { OCEAN_ORDER, weekIndex, type OceanId } from '../game/oceans';
-import { addReputation, FACTION_IDS, type FactionId } from './factions';
+import { addReputation, FACTION_IDS, FACTIONS, TIERS, tierOf, type FactionId } from './factions';
 import { equipped } from './modules';
 import { activeModules, applyTideDive, hasFlag, portOn } from './tides';
 import type { DiveResult, RelicId, SharkKind } from '../game/types';
@@ -10,9 +10,10 @@ import { dialogueFor } from './dialogue';
 import { applyPhotos } from './encyclopedia';
 import { expeditionScale, shaftPearls } from './expedition';
 import { applyMissions, type MissionDef } from './missions';
-import { activeQuests, CHAPTER_COUNT, chapterOf, EMPTY_QUEST, oceansAfter, pendingChoice, progressQuest, questById, stepKey, stepsDone, type QuestDef } from './quests';
+import { activeQuests, CHAPTER_COUNT, chapterOf, EMPTY_QUEST, oceansAfter, pendingChoice, progressQuest, QUESTS, questById, stepKey, stepsDone, type QuestDef } from './quests';
 import { explorerLevel, levelReward } from './research';
-import { PORT_INTRO, type SaveData } from './saveData';
+import { EXPANSION_FLAG, expansionIntro, PORT_INTRO, type Ending, type SaveData, type TideEnding } from './saveData';
+import { endingAvailable, ENDINGS, TIDE_ENDINGS } from './story';
 import { maxLevel, UPGRADES } from './upgrades';
 
 const MAX_BRIEFS = 3;
@@ -306,6 +307,35 @@ export function choiceAvailable(save: SaveData, needs?: string[]): boolean {
   return !needs || needs.every((f) => hasFlag(save, f));
 }
 
+export interface Requirement {
+  label: string;
+  done: boolean;
+}
+
+export function flagRequirement(save: SaveData, flag: string): Requirement {
+  const done = hasFlag(save, flag);
+  if (flag === 'allies3') {
+    const allies = FACTION_IDS.filter((f) => tierOf(save.reputation[f]) >= 3).length;
+    return { label: `Respektovaný u 3 frakcí (máš ${Math.min(allies, 3)}/3)`, done };
+  }
+  if (flag.startsWith('rifts')) {
+    const need = Number(flag.slice(5));
+    return { label: `Uzavři ${need} trhlin (máš ${Math.min(save.rifts.closed, need)}/${need})`, done };
+  }
+  if (flag.startsWith('respect:')) {
+    const faction = flag.slice(8) as FactionId;
+    return { label: `${FACTIONS[faction].name}: Respektovaný (${save.reputation[faction]}/${TIERS[3].points} b.)`, done };
+  }
+  const quest = QUESTS.find((q) => q.reward.flag === flag);
+  return { label: quest ? `Splň úkol „${quest.title}“` : flag, done };
+}
+
+export function choiceRequirements(save: SaveData, needs: string[] = [], cost = 0): Requirement[] {
+  const list = needs.map((flag) => flagRequirement(save, flag));
+  if (cost > 0) list.push({ label: save.money >= cost ? `${cost.toLocaleString('cs-CZ')} $` : `${cost.toLocaleString('cs-CZ')} $ (chybí ${(cost - save.money).toLocaleString('cs-CZ')} $)`, done: save.money >= cost });
+  return list;
+}
+
 export function resettle(save: SaveData): SaveData {
   return settle(save, save.quests).save;
 }
@@ -333,4 +363,19 @@ export function applyChoice(current: SaveData, questId: string, optionId: string
 
 export function chapterOceans(chapter: number): OceanId[] {
   return OCEAN_ORDER.slice(0, chapter + 1);
+}
+
+export function applyEnding(current: SaveData, ending: Ending): SaveData | null {
+  if (current.ending || !endingAvailable(ending, current)) return null;
+  const reward = ENDINGS[ending].reward;
+  const upgrades = ending === 'sacrifice' ? { ...current.upgrades, boat: Math.max(0, current.upgrades.boat - 2) } : current.upgrades;
+  const flags = [...new Set([...current.flags, ...(ending === 'power' ? ['anomalies'] : []), EXPANSION_FLAG])];
+  const pendingDialogs = [...current.pendingDialogs, ...expansionIntro(ending).filter((d) => !current.pendingDialogs.includes(d))];
+  return { ...current, ending, upgrades, flags, pendingDialogs, tideChapter: Math.max(current.tideChapter, 9), money: current.money + reward.money, pearls: current.pearls + reward.pearls, researchData: current.researchData + reward.research };
+}
+
+export function applyTideEnding(current: SaveData, id: TideEnding): SaveData | null {
+  if (current.tideEnding) return null;
+  const reward = TIDE_ENDINGS[id].reward;
+  return { ...current, tideEnding: id, money: current.money + reward.money, pearls: current.pearls + reward.pearls, researchData: current.researchData + reward.research, tideChapter: 13 };
 }

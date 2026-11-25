@@ -3,7 +3,7 @@ import { Image, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { DEFAULT_TIDE, EXPANSION_OCEANS, mapPosition, OCEAN_ORDER, OCEANS, WORLD_OCEANS, type OceanId } from '../game/oceans';
 import { expansionOn } from '../progression/tides';
 import { CHARACTERS } from '../progression/characters';
-import { activeQuests, CATEGORY_LABEL, CHAPTER_COUNT } from '../progression/quests';
+import { activeQuests, CATEGORY_LABEL, CHAPTER_COUNT, chapterName } from '../progression/quests';
 import type { SaveData } from '../progression/saveData';
 import { Icon } from '../render/Sprite';
 import { ILLUSTRATIONS } from '../render/spriteAssets';
@@ -28,7 +28,7 @@ function Gear({ label, have, need }: { label: string; have: number; need: number
   return (
     <View style={[styles.gear, { borderColor: ok ? COLORS.seaweed : COLORS.coral }]}>
       <Text style={styles.gearText}>
-        {ok ? '✓' : '!'} {label} {need}
+        {ok ? '✓' : '!'} {label} úr. {need}{ok ? '' : ` (máš ${have})`}
       </Text>
     </View>
   );
@@ -46,7 +46,7 @@ export function WorldMap({ save, width, height, onTravel, onClose }: Props) {
   const shown = WORLD_OCEANS.filter((id) => !EXPANSION_OCEANS.includes(id) || expansion);
   const rifts = save.rifts.active.filter((r) => r.ocean === selected);
   const tide = ocean.tide ?? DEFAULT_TIDE;
-  const lockText = EXPANSION_OCEANS.includes(selected) ? `Odemkne se v kapitole ${selected === 'riptide' ? 9 : 10} rozšíření Živé proudy.` : `Odemkne se po kapitole ${chapterIndex} hlavního příběhu.`;
+  const lockText = EXPANSION_OCEANS.includes(selected) ? `Odemkne se v kapitole ${selected === 'riptide' ? 9 : 10} rozšíření Živé proudy.` : `Odemkne se po dokončení ${chapterName(chapterIndex)}.`;
   const quests = activeQuests(save.quests, save.oceans, save.flags).filter((q) => q.ocean === selected);
   const explored = ocean.regions.filter((r) => save.discoveries.includes(`loc:${selected}:${r.id}`)).length;
   const levels = save.upgrades;

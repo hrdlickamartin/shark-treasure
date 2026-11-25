@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
-import { OCEAN_ORDER, OCEANS } from '../game/oceans';
+import { SHARKS } from '../game/catalog';
+import { OCEAN_ORDER, OCEANS, WORLD_OCEANS } from '../game/oceans';
+import { UPGRADES } from '../progression/upgrades';
 import { canEmbark, embarkChapter, embarkEarnings, embarkRequirements } from '../progression/embark';
 import { expeditionScale, PERKS, pearlsFor, perkCost, perkLevel, type PerkId } from '../progression/expedition';
 import type { SaveData } from '../progression/saveData';
@@ -18,6 +20,8 @@ interface Props {
   onClose: () => void;
 }
 
+
+const BOSS_OCEANS = WORLD_OCEANS.filter((id) => OCEANS[id].bossRegion !== null);
 
 function Requirement({ done, label }: { done: boolean; label: string }) {
   return (
@@ -45,6 +49,7 @@ export function Expedition({ save, width, height, onBuyPerk, onEmbark, onClose }
   const req = embarkRequirements(save);
   const chapter = embarkChapter(save.expedition);
   const goal = embarkEarnings(save.expedition);
+  const fresh = UPGRADES.filter((u) => u.unlockAt === save.expedition + 1).map((u) => u.name);
   const pearls = pearlsFor(save.run.earned, save.expedition);
   const columns = width > 820 ? 3 : width > 520 ? 2 : 1;
   const cardWidth = Math.min(240, (Math.min(width - 60, 860) - (columns - 1) * 10) / columns);
@@ -66,13 +71,13 @@ export function Expedition({ save, width, height, onBuyPerk, onEmbark, onClose }
           </Text>
           <View style={styles.box}>
             <Text style={styles.section}>Nová výprava</Text>
-            <Requirement done={req.chapter} label={`Dokonči kapitolu ${chapter}: ${OCEANS[OCEAN_ORDER[chapter - 1]].czech}`} />
-            <Requirement done={req.boss} label="Na této výpravě ukradni poklad některého z bossů" />
+            <Requirement done={req.chapter} label={`Dokonči kapitolu ${chapter} (${OCEANS[OCEAN_ORDER[chapter - 1]].czech})`} />
+            <Requirement done={req.boss} label={`Na této výpravě ukradni poklad bosse (${BOSS_OCEANS.filter((id) => save.oceans.includes(id)).map((id) => `${SHARKS[OCEANS[id].boss].name} – ${OCEANS[id].czech}`).join(', ')})`} />
             <Requirement done={req.earned} label={`Vydělej na této výpravě ${goal.toLocaleString('cs-CZ')} $ (${Math.min(save.run.earned, goal).toLocaleString('cs-CZ')} $)`} />
             <Text style={styles.reqText}>
-              Odměna: {pearls} perel • vybavení může o úroveň výš • poklady +{Math.round(next.loot * 100)} %, nebezpečí ×{next.danger.toLocaleString('cs-CZ')}
+              Odměna: {pearls} perel • vyšší strop vybavení{fresh.length ? ` • nové vybavení: ${fresh.join(', ')}` : ''} • poklady +{Math.round(next.loot * 100)} %, nebezpečí ×{next.danger.toLocaleString('cs-CZ')}
             </Text>
-            {confirm && <Text style={styles.warn}>Přijdeš o peníze, vybavení a splněné mise. Relikvie, vzhledy, perly a deník ti zůstanou.</Text>}
+            {confirm && <Text style={styles.warn}>Přijdeš o peníze, vylepšení (i lodní motor, takže se zavřou sloty modulů) a splněné mise a začneš v Karibiku. Zůstane ti příběh, relikvie, vzhledy, perly, výzkum, materiály, výbava, modifikace, moduly a reputace.</Text>}
             <GameButton
               label={!ready ? 'Ještě nejsi připraven' : confirm ? 'Opravdu vyplout' : 'Vyplout na novou výpravu'}
               variant={ready ? (confirm ? 'gold' : 'green') : 'navy'}

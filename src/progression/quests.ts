@@ -774,6 +774,8 @@ export const CHAPTER_COUNT = OCEAN_ORDER.length;
 export const TIDE_FIRST_CHAPTER = 9;
 export const TIDE_LAST_CHAPTER = 12;
 
+export const chapterName = (chapter: number): string => `kapitoly ${chapter} (${OCEANS[OCEAN_ORDER[Math.max(0, Math.min(OCEAN_ORDER.length, chapter) - 1)]].czech})`;
+
 export const chapterOf = (quest: QuestDef): number => (quest.chapter ? quest.chapter - 1 : OCEAN_ORDER.indexOf(quest.ocean));
 
 export const chapterEndFor = (chapter: number): QuestDef | undefined => QUESTS.find((q) => q.chapterEnd && chapterOf(q) === chapter);

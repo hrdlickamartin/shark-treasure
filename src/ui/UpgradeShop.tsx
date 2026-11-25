@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
-import { OCEAN_ORDER, OCEANS } from '../game/oceans';
 import type { SkinId, Supplies } from '../game/types';
+import { chapterName } from '../progression/quests';
 import { SKINS, skinned } from '../progression/skins';
 import { maxLevel, nextStoryChapter, SUPPLY_ITEMS, SUPPLY_LIMIT, supplyPrice, unlocked, UPGRADES, upgradeCost, type SupplyId, type UpgradeDef, type UpgradeId, type UpgradeLevels } from '../progression/upgrades';
 import { Icon } from '../render/Sprite';
@@ -41,6 +41,7 @@ export function UpgradeShop({ money, levels, expedition, chapter, supplies, onBu
           </View>
           <MoneyPill amount={money} />
         </View>
+        {discount < 1 && <Text style={styles.unlock}>Sleva Přístavního cechu −{Math.round((1 - discount) * 100)} % na všechna vylepšení</Text>}
         <ScrollView style={{ flexGrow: 0, flexShrink: 1 }} contentContainerStyle={styles.grid} showsVerticalScrollIndicator={false}>
           {tab === 'skins' &&
             SKINS.map((def) => {
@@ -105,7 +106,7 @@ export function UpgradeShop({ money, levels, expedition, chapter, supplies, onBu
           {tab === 'gear' && (
             <View style={[styles.card, styles.supplies]}>
               <Text style={styles.name}>Zásoby na příští ponor</Text>
-              <Text style={styles.desc}>Spotřebují se v dalším ponoru, od každé nejvýš {SUPPLY_LIMIT} kusy.</Text>
+              <Text style={styles.desc}>Spotřebují se v dalším ponoru. V obchodě nejvýš {SUPPLY_LIMIT} od každé, další přidá obchodník na moři nebo dílna.</Text>
               <View style={styles.supplyRow}>
                 {SUPPLY_ITEMS.map((item) => {
                   const price = supplyPrice(item.id, chapter);
@@ -139,8 +140,8 @@ export function UpgradeShop({ money, levels, expedition, chapter, supplies, onBu
 
 function NextLevel({ def, expedition, chapter }: { def: UpgradeDef; expedition: number; chapter: number }) {
   const story = nextStoryChapter(def, chapter);
-  if (story !== null) return <Text style={styles.unlock}>Další úroveň: dokonči kapitolu {OCEANS[OCEAN_ORDER[story - 1]].czech}</Text>;
-  if (expedition < def.extra) return <Text style={styles.unlock}>Další úroveň na příští výpravě</Text>;
+  if (story !== null) return <Text style={styles.unlock}>Další úroveň po dokončení {chapterName(story)}</Text>;
+  if (expedition < def.extra) return <Text style={styles.unlock}>Na příští výpravě půjde o úroveň výš (vybavení ale začne znovu od nuly)</Text>;
   return null;
 }
 

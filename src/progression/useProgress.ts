@@ -4,7 +4,7 @@ import type { DiveResult, SkinId } from '../game/types';
 import { SKINS } from './skins';
 import { DEFAULT_SAVE, loadSave, type SaveData, writeSave } from './save';
 import { canEmbark, embarkSave } from './embark';
-import { applyChoice, applyDive, resettle, type ResultSummary } from './progress';
+import { applyChoice, applyDive, applyEnding, applyTideEnding, resettle, type ResultSummary } from './progress';
 import type { ModId, ModSlot } from './crafting';
 import { discountFor, type FactionId } from './factions';
 import type { ModuleId, ModuleSlot } from './modules';
@@ -14,8 +14,7 @@ import type { Line } from './characters';
 import { dialogueFor } from './dialogue';
 import { questById } from './quests';
 import { canResearch, RESEARCH } from './research';
-import { EXPANSION_FLAG, expansionIntro, type Ending, type TideEnding } from './saveData';
-import { endingAvailable, ENDINGS, TIDE_ENDINGS } from './story';
+import type { Ending, TideEnding } from './saveData';
 import { PERKS, perkCost, perkLevel, type PerkId } from './expedition';
 import { maxLevel, SUPPLY_LIMIT, supplyPrice, unlocked, UPGRADES, upgradeCost, type SupplyId, type UpgradeId } from './upgrades';
 
@@ -117,13 +116,8 @@ export function useProgress() {
 
   const chooseEnding = useCallback(
     (ending: Ending) => {
-      const current = saveRef.current;
-      if (current.ending || !endingAvailable(ending, current)) return;
-      const reward = ENDINGS[ending].reward;
-      const upgrades = ending === 'sacrifice' ? { ...current.upgrades, boat: Math.max(0, current.upgrades.boat - 2) } : current.upgrades;
-      const flags = [...new Set([...current.flags, ...(ending === 'power' ? ['anomalies'] : []), EXPANSION_FLAG])];
-      const pendingDialogs = [...current.pendingDialogs, ...expansionIntro(ending).filter((d) => !current.pendingDialogs.includes(d))];
-      commit({ ...current, ending, upgrades, flags, pendingDialogs, tideChapter: Math.max(current.tideChapter, 9), money: current.money + reward.money, pearls: current.pearls + reward.pearls, researchData: current.researchData + reward.research });
+      const next = applyEnding(saveRef.current, ending);
+      if (next) commit(next);
     },
     [commit],
   );
@@ -211,10 +205,8 @@ export function useProgress() {
 
   const chooseTideEnding = useCallback(
     (id: TideEnding) => {
-      const current = saveRef.current;
-      if (current.tideEnding) return;
-      const reward = TIDE_ENDINGS[id].reward;
-      commit({ ...current, tideEnding: id, money: current.money + reward.money, pearls: current.pearls + reward.pearls, researchData: current.researchData + reward.research, tideChapter: 13 });
+      const next = applyTideEnding(saveRef.current, id);
+      if (next) commit(next);
     },
     [commit],
   );

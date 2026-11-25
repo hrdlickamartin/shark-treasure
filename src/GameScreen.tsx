@@ -29,7 +29,7 @@ import { photoMessage } from './progression/encyclopedia';
 import type { SaveData, TideEnding } from './progression/saveData';
 import type { Line } from './progression/characters';
 import { dialogueFor, radioLine, type Dialogue } from './progression/dialogue';
-import { choiceAvailable } from './progression/progress';
+import { choiceAvailable, choiceRequirements } from './progression/progress';
 import { DialogueBox, RadioBubble } from './ui/Dialogue';
 import { statsFor, type UpgradeId } from './progression/upgrades';
 import { type ResultSummary, useProgress } from './progression/useProgress';
@@ -570,6 +570,7 @@ export function GameScreen() {
             money={save.money}
             big={save.settings.bigText}
             canChoose={(needs) => choiceAvailable(save, needs)}
+            requirements={(needs, cost) => choiceRequirements(save, needs, cost)}
             onChoose={(option) => {
               if (!dialog.choice) return null;
               heldDialog.current = dialog;
@@ -586,7 +587,7 @@ export function GameScreen() {
       )}
 
       {toast && (
-        <View style={[styles.toast, { top: insets.top + (screen === 'play' ? 150 : 20) }]} pointerEvents="none">
+        <View style={[styles.toast, { top: insets.top + (screen !== 'play' ? 20 : height > width && radio && (gameRef.current ?? game).phase === 'dive' ? 270 : 150) }]} pointerEvents="none">
           <Text style={styles.toastText}>{toast.text}</Text>
         </View>
       )}

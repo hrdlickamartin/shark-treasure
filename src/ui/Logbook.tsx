@@ -10,6 +10,7 @@ import { activeQuests, CATEGORY_LABEL, CHAPTER_COUNT, EMPTY_QUEST, QUESTS, stepK
 import { RELICS, SET_BONUS } from '../progression/relics';
 import { canResearch, explorerLevel, levelXp, RESEARCH } from '../progression/research';
 import type { SaveData } from '../progression/saveData';
+import { expansionOn, portOn, researchCost } from '../progression/tides';
 import { ENDINGS, TIDE_ENDINGS } from '../progression/story';
 import { Icon } from '../render/Sprite';
 import { GameButton } from './Button';
@@ -147,7 +148,7 @@ function Catalog({ save, cardWidth }: { save: SaveData; cardWidth: number }) {
   return (
     <>
       <Text style={styles.note}>
-        Vyfoceno {found}/{SPECIES.length} druhů. Fotoaparát koupíš ve Vylepšení, lepší snímek zblízka a v klidu.
+        Vyfoceno {found}/{SPECIES.length} druhů. Foťák máš od začátku (pod vodou tlačítko foťáku nebo C). Objektiv ve Vylepšení přidá dosah, lepší snímek uděláš zblízka a v klidu.
       </Text>
       <View style={styles.grid}>
         {SPECIES.map((s) => {
@@ -177,11 +178,13 @@ function Research({ save, onLearn, cardWidth }: { save: SaveData; onLearn: (id: 
         <Text style={styles.hint}>
           {save.xp - from}/{to - from} XP • výzkumná data: {save.researchData}
         </Text>
+        <Text style={styles.hint}>Data získáš za nové druhy v katalogu, nové lokace, relikvie, úkoly a trofeje bossů.</Text>
       </View>
       <View style={styles.grid}>
         {RESEARCH.map((r) => {
           const owned = save.research.includes(r.id);
-          const able = canResearch(r, save.research, save.researchData);
+          const cost = researchCost(save, r.cost);
+          const able = canResearch({ ...r, cost }, save.research, save.researchData);
           const blocked = r.requires && !save.research.includes(r.requires);
           return (
             <View key={r.id} style={[styles.tile, { width: cardWidth }, owned && styles.tileOn]}>
@@ -189,7 +192,7 @@ function Research({ save, onLearn, cardWidth }: { save: SaveData; onLearn: (id: 
               <Text style={styles.tileName}>{r.name}</Text>
               <Text style={styles.tileSub}>{r.description}</Text>
               {blocked && !owned && <Text style={styles.tileSub}>Vyžaduje: {RESEARCH.find((x) => x.id === r.requires)?.name}</Text>}
-              <GameButton label={owned ? 'Hotovo' : `${r.cost} dat`} size="sm" variant={able ? 'green' : 'navy'} disabled={!able} silent onPress={() => onLearn(r.id)} />
+              <GameButton label={owned ? 'Hotovo' : `${cost} dat${cost < r.cost ? ' (−20 %)' : ''}`} size="sm" variant={able ? 'green' : 'navy'} disabled={!able} silent onPress={() => onLearn(r.id)} />
             </View>
           );
         })}
@@ -244,9 +247,9 @@ function Collection({ save, cardWidth }: { save: SaveData; cardWidth: number }) 
         })}
       </View>
       <Text style={styles.note}>Kompletní sada přidá +{Math.round(SET_BONUS * 100)} % ke všem pokladům.</Text>
-      {save.flags.includes('expansion') && (
+      {portOn(save) && (
         <>
-          <Text style={styles.section}>Materiály a úlomky</Text>
+          <Text style={styles.section}>{expansionOn(save) ? 'Materiály a úlomky' : 'Materiály'}</Text>
           <View style={styles.grid}>
             {MATERIAL_IDS.map((id) => (
               <View key={id} style={[styles.tile, { width: cardWidth }, (save.materials[id] ?? 0) > 0 && styles.tileOn]}>
@@ -258,9 +261,11 @@ function Collection({ save, cardWidth }: { save: SaveData; cardWidth: number }) 
               </View>
             ))}
           </View>
-          <Text style={styles.note}>
-            Atlantské úlomky celkem: {save.shards.total} • uzavřené trhliny: {save.rifts.closed} • poklady z map: {save.hunt.found}
-          </Text>
+          {expansionOn(save) && (
+            <Text style={styles.note}>
+              Atlantské úlomky celkem: {save.shards.total} • uzavřené trhliny: {save.rifts.closed} • poklady z map: {save.hunt.found}
+            </Text>
+          )}
           {save.aquarium.length > 0 && <Text style={styles.note}>Akvárium: {save.aquarium.map((id) => speciesById(id)?.name ?? id).join(', ')}</Text>}
         </>
       )}

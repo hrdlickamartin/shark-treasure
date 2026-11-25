@@ -7,7 +7,7 @@ import { expeditionScale, perkBonus, type PerkLevels } from './expedition';
 import { relicBonus } from './relics';
 import { researchBonus } from './research';
 import type { ModId, ModSlot } from './crafting';
-import { type BoatModules, equipped } from './modules';
+import { type BoatModules, equipped, slotCount } from './modules';
 
 export type UpgradeId =
   | 'tank'
@@ -67,7 +67,7 @@ export const UPGRADES: UpgradeDef[] = [
   { id: 'thermal', name: 'Termooblek', description: 'Chrání před chladem i žárem', icon: 'icon_thermal', max: 3, extra: 2, baseCost: 700, growth: 1.9, story: [7], effect: (l) => (l ? `−${Math.round((1 - thermalFor(l)) * 100)} % ztráty teploty` : 'nemáš') },
   { id: 'cutter', name: 'Řezák', description: 'Otevře zapečetěné truhly a vraky', icon: 'icon_cutter', max: 2, extra: 1, baseCost: 1400, growth: 2, effect: (l) => (l ? `řez za ${cutTime(l).toLocaleString('cs-CZ')} s` : 'nemáš') },
   { id: 'camera', name: 'Objektiv fotoaparátu', description: 'Foťák máš od začátku, objektiv přidá dosah a kvalitnější fotky', icon: 'icon_camera', max: 3, extra: 1, baseCost: 350, growth: 1.9, story: [5], effect: (l) => `dosah ${Math.round(cameraRange(l + 1) / 10)} m` },
-  { id: 'boat', name: 'Lodní motor', description: 'Rychlejší plavba po oceánu', icon: 'icon_engine', max: 5, extra: 2, baseCost: 800, growth: 1.9, story: [4, 7], effect: (l) => `rychlost ${Math.round(((170 + l * 30) / 170) * 100)} %` },
+  { id: 'boat', name: 'Lodní motor', description: 'Rychlejší plavba a víc slotů pro moduly lodi (Přístav)', icon: 'icon_engine', max: 5, extra: 2, baseCost: 800, growth: 1.9, story: [4, 7], effect: (l) => `rychlost ${Math.round(((170 + l * 30) / 170) * 100)} %, sloty ${slotCount(l)}/6` },
   { id: 'drone', name: 'Dron Pip', description: 'Mayin průzkumník: odhalí, donese, naskenuje', icon: 'icon_pip', max: 3, extra: 0, baseCost: 1200, growth: 2.5, expansion: true, effect: (l) => (l ? `úroveň ${l}, dosah ${Math.round(droneRangeFor(l) / 10)} m` : 'získáš v příběhu') },
 ];
 

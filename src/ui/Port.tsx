@@ -3,14 +3,14 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { KIT, MATERIAL_IDS, MATERIALS, type KitId, type MaterialCounts, type MaterialId } from '../game/gear';
 import { todayKey } from '../game/modifiers';
-import { OCEANS, weekIndex } from '../game/oceans';
+import { OCEANS, WORLD_OCEANS, weekIndex } from '../game/oceans';
 import { Icon } from '../render/Sprite';
 import { CHARACTERS } from '../progression/characters';
 import { affordable, MOD_SLOTS, MODS, outputIcon, outputName, RECIPES, type ModId } from '../progression/crafting';
-import { contractsFor, FACTION_IDS, FACTIONS, factionsFor, SHARD_REWARDS, TIERS, tierOf, type FactionId } from '../progression/factions';
-import { MODULE_IDS, MODULES, openSlots, SLOTS, type ModuleId } from '../progression/modules';
+import { FACTION_IDS, FACTIONS, factionsFor, tierUnlocks, SHARD_REWARDS, TIERS, tierOf, type FactionId } from '../progression/factions';
+import { MODULE_IDS, MODULES, openSlots, slotBoatLevel, SLOTS, type ModuleId } from '../progression/modules';
 import type { SaveData } from '../progression/saveData';
-import { expansionOn, MAP_PIECE_PRICE, modulePrice, moduleLocked, RIFT_RULES, SAFARI_REWARD, safariTarget } from '../progression/tides';
+import { contractsToday, expansionOn, MAP_PIECE_PRICE, modulePrice, moduleLocked, RIFT_RULES, SAFARI_REWARD, safariTarget } from '../progression/tides';
 import type { useProgress } from '../progression/useProgress';
 import { GameButton } from './Button';
 import { MoneyPill, Overlay, Panel, Title } from './Panel';
@@ -39,6 +39,14 @@ const leaderOf = (faction: FactionId, expansion: boolean) => CHARACTERS[faction 
 
 const callName = (name: string) => name.replace(/^(Kapitánka|Kapitán|Profesor|Profesorka|Doktor|Doktorka)\s+/, '').split(' ')[0];
 
+function materialSource(id: MaterialId, save: SaveData): string {
+  const oceans = WORLD_OCEANS.filter((o) => (OCEANS[o].materials[id] ?? 0) > 0);
+  const open = oceans.filter((o) => save.oceans.includes(o));
+  const next = oceans.find((o) => !save.oceans.includes(o));
+  const where = open.length ? `Najdeš: ${open.map((o) => OCEANS[o].czech).join(', ')}` : `Zatím nedostupné – první výskyt: ${next ? OCEANS[next].czech : '?'}`;
+  return `${where}. ${MATERIALS[id].source}.`;
+}
+
 const TAB_LABEL: Record<Tab, string> = { contracts: 'Zakázky', workshop: 'Dílna', boat: 'Loď' };
 
 function Cost({ cost, have, money }: { cost: MaterialCounts; have: MaterialCounts; money?: number }) {
@@ -48,7 +56,7 @@ function Cost({ cost, have, money }: { cost: MaterialCounts; have: MaterialCount
         <View key={id} style={styles.cost}>
           <Icon name={MATERIALS[id].sprite} size={16} />
           <Text style={[styles.costText, (have[id] ?? 0) < n && { color: COLORS.coral }]}>
-            {have[id] ?? 0}/{n}
+            {MATERIALS[id].name} {have[id] ?? 0}/{n}
           </Text>
         </View>
       ))}
@@ -113,11 +121,12 @@ function Contracts({ save, progress }: { save: SaveData; progress: Props['progre
               {callName(leader.name)}: „{GREETINGS[f][tier >= 3 ? 2 : tier >= 1 ? 1 : 0]}“
             </Text>
             <Text style={styles.small}>Chce: {def.wants}. Odměny: {def.rewards}.</Text>
+            {next && <Text style={styles.small}>Další úroveň {next.name} ({next.points} b.): {tierUnlocks(f, tier + 1)}.</Text>}
           </View>
         );
       })}
       <Text style={styles.section}>Dnešní zakázky</Text>
-      {contractsFor(day, expansion).map((c) => {
+      {contractsToday(save, day).map((c) => {
         const finished = done.includes(c.id);
         return (
           <View key={c.id} style={styles.row}>
@@ -147,7 +156,7 @@ function Contracts({ save, progress }: { save: SaveData; progress: Props['progre
           <Text style={styles.small}>{save.hunt.active ? save.hunt.active.clue : 'Láhve se vzkazem plují po moři. Tři útržky složí mapu k pokladu.'}</Text>
         </View>
         {!save.hunt.active && (
-          <GameButton label={`Útržek ${MAP_PIECE_PRICE.toLocaleString('cs-CZ')} $`} size="xs" variant="blue" disabled={tierOf(save.reputation.brotherhood) < 1 || save.money < MAP_PIECE_PRICE} onPress={() => progress.buyMap()} />
+          <GameButton label={tierOf(save.reputation.brotherhood) < 1 ? `Od Bratrstva – Známý (${save.reputation.brotherhood}/${TIERS[1].points} b.)` : `Útržek ${MAP_PIECE_PRICE.toLocaleString('cs-CZ')} $`} size="xs" variant="blue" disabled={tierOf(save.reputation.brotherhood) < 1 || save.money < MAP_PIECE_PRICE} onPress={() => progress.buyMap()} />
         )}
       </View>
       <Text style={styles.section}>Fotosafari týdne</Text>
@@ -188,14 +197,17 @@ function Workshop({ save, progress }: { save: SaveData; progress: Props['progres
   return (
     <>
       <Text style={styles.section}>Materiály</Text>
-      <View style={styles.inventory}>
-        {MATERIAL_IDS.map((id) => (
-          <View key={id} style={styles.invItem}>
-            <Icon name={MATERIALS[id].sprite} size={28} />
-            <Text style={styles.invText}>{save.materials[id] ?? 0}</Text>
+      {MATERIAL_IDS.map((id) => (
+        <View key={id} style={styles.row}>
+          <Icon name={MATERIALS[id].sprite} size={28} />
+          <View style={styles.flex}>
+            <Text style={styles.rowTitle}>
+              {MATERIALS[id].name} • {save.materials[id] ?? 0}
+            </Text>
+            <Text style={styles.small}>{materialSource(id, save)}</Text>
           </View>
-        ))}
-      </View>
+        </View>
+      ))}
       {kits.length > 0 && (
         <>
           <Text style={styles.section}>Výbava na ponor</Text>
@@ -223,7 +235,7 @@ function Workshop({ save, progress }: { save: SaveData; progress: Props['progres
               <Text style={styles.rowTitle}>
                 {outputName(r.output)} {r.output.kind === 'mod' ? `• ${MOD_SLOTS.find((m) => m.id === MODS[r.output.id as ModId].slot)?.name}` : ''}
               </Text>
-              <Text style={styles.small}>{later ? AFTER_CAMPAIGN : locked ? `Odemkne: ${FACTIONS[r.unlock!.faction].name} – ${TIERS[r.unlock!.tier].name}` : effect}</Text>
+              <Text style={styles.small}>{later ? AFTER_CAMPAIGN : locked ? `Odemkne: ${FACTIONS[r.unlock!.faction].name} – ${TIERS[r.unlock!.tier].name} (${save.reputation[r.unlock!.faction]}/${TIERS[r.unlock!.tier].points} b.)` : effect}</Text>
               {!locked && !owned && <Cost cost={r.cost} have={save.materials} money={r.money} />}
             </View>
             {owned ? <Text style={styles.done}>Máš</Text> : <GameButton label="Vyrobit" size="xs" variant="green" disabled={!can} onPress={() => progress.craftItem(r.id)} />}
@@ -263,7 +275,7 @@ function Boat({ save, progress }: { save: SaveData; progress: Props['progress'] 
           <View key={slot.id} style={[styles.row, !unlocked && styles.dim]}>
             <Text style={[styles.rowTitle, styles.slotName]}>{slot.name}</Text>
             <View style={[styles.flex, styles.wrap]}>
-              {!unlocked && <Text style={styles.small}>Odemkne vyšší lodní motor</Text>}
+              {!unlocked && <Text style={styles.small}>Odemkne Lodní motor úr. {slotBoatLevel(slot.id)} (máš {save.upgrades.boat})</Text>}
               {unlocked && owned.length === 0 && <Text style={styles.small}>Prázdný slot</Text>}
               {unlocked &&
                 owned.map((m) => (
@@ -279,7 +291,8 @@ function Boat({ save, progress }: { save: SaveData; progress: Props['progress'] 
         const owned = save.modules.owned.includes(id);
         const locked = moduleLocked(save, id);
         const price = modulePrice(save, id);
-        const can = !owned && !locked && save.money >= price && affordable(save.materials, def.cost);
+        const slotOpen = open.includes(def.slot);
+        const can = !owned && !locked && slotOpen && save.money >= price && affordable(save.materials, def.cost);
         return (
           <View key={id} style={[styles.row, locked && styles.dim]}>
             <Icon name={def.sprite} size={40} />
@@ -287,7 +300,8 @@ function Boat({ save, progress }: { save: SaveData; progress: Props['progress'] 
               <Text style={styles.rowTitle}>
                 {def.name} • {SLOTS.find((s) => s.id === def.slot)?.name}
               </Text>
-              <Text style={styles.small}>{def.expansion && !expansion ? AFTER_CAMPAIGN : locked && def.faction ? `Odemkne: ${FACTIONS[def.faction].name} – Důvěryhodný` : def.effect}</Text>
+              <Text style={styles.small}>{def.expansion && !expansion ? AFTER_CAMPAIGN : locked && def.faction ? `Odemkne: ${FACTIONS[def.faction].name} – Důvěryhodný (${save.reputation[def.faction]}/${TIERS[2].points} b.)` : def.effect}</Text>
+              {!owned && !locked && !slotOpen && <Text style={styles.warnSmall}>Slot {SLOTS.find((x) => x.id === def.slot)?.name} je zamčený – vylepši Lodní motor na úr. {slotBoatLevel(def.slot)}</Text>}
               {!owned && !locked && <Cost cost={def.cost} have={save.materials} money={price} />}
             </View>
             {owned ? <Text style={styles.done}>Máš</Text> : <GameButton label="Koupit" size="xs" variant="gold" disabled={!can} onPress={() => progress.purchaseModule(id)} />}
@@ -342,6 +356,7 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: 'rgba(16, 70, 132, 0.45)', borderRadius: 10, padding: 7 },
   rowTitle: { color: COLORS.white, fontFamily: FONTS.bodyHeavy, fontSize: 13 },
   small: { color: COLORS.muted, fontFamily: FONTS.body, fontSize: 11, flexShrink: 1 },
+  warnSmall: { color: COLORS.coral, fontFamily: FONTS.bodyHeavy, fontSize: 11, flexShrink: 1 },
   quote: { color: COLORS.white, fontFamily: FONTS.body, fontSize: 12, fontStyle: 'italic' },
   done: { color: COLORS.seaweed, fontFamily: FONTS.title, fontSize: 13 },
   flex: { flex: 1 },

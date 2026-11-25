@@ -1,4 +1,4 @@
-import type { MaterialCounts } from '../game/gear';
+import type { MaterialCounts, MaterialId } from '../game/gear';
 import { hash } from '../game/rng';
 import type { DiveResult } from '../game/types';
 import type { SpriteName } from '../render/spriteAssets';
@@ -30,7 +30,7 @@ export const FACTION_IDS = Object.keys(FACTIONS) as FactionId[];
 export const TIERS = [
   { name: 'Neznámý', points: 0, unlocks: 'Základní zakázky' },
   { name: 'Známý', points: 150, unlocks: 'První recept frakce' },
-  { name: 'Důvěryhodný', points: 400, unlocks: 'Modul lodi frakce, sleva 10 %' },
+  { name: 'Důvěryhodný', points: 400, unlocks: 'Modul lodi frakce' },
   { name: 'Respektovaný', points: 800, unlocks: 'Příběhová linka frakce' },
   { name: 'Legenda', points: 1400, unlocks: 'Legendární recept, spojenec ve finále' },
 ];
@@ -55,6 +55,8 @@ export function addReputation(rep: Reputation, faction: FactionId, amount: numbe
   }
   return next;
 }
+
+export const tierUnlocks = (faction: FactionId, tier: number) => (faction === 'guild' && tier === 2 ? `${TIERS[tier].unlocks}, sleva 10 % na vylepšení a moduly` : TIERS[tier].unlocks);
 
 export const discountFor = (rep: Reputation, faction: FactionId) => (tierOf(rep[faction]) >= 2 ? 0.9 : 1);
 
@@ -101,11 +103,11 @@ const TEMPLATES: Record<FactionId, Omit<Contract, 'id' | 'faction'>[]> = {
 
 export const factionsFor = (expansion: boolean): FactionId[] => FACTION_IDS.filter((f) => expansion || !FACTIONS[f].expansion);
 
-export function contractsFor(day: string, expansion = true): Contract[] {
+export function contractsFor(day: string, expansion = true, available?: MaterialId[]): Contract[] {
   const seed = [...day].reduce((h, ch) => (h * 31 + ch.charCodeAt(0)) >>> 0, 7);
   return FACTION_IDS.flatMap((faction, i) => {
     if (!expansion && FACTIONS[faction].expansion) return [];
-    const pool = expansion ? TEMPLATES[faction] : TEMPLATES[faction].filter((t) => !t.expansion);
+    const pool = TEMPLATES[faction].filter((t) => (expansion || !t.expansion) && (!available || !t.materials || Object.keys(t.materials).every((m) => available.includes(m as MaterialId))));
     const template = pool[hash(seed, i) % pool.length];
     return [{ ...template, id: `${day}:${faction}`, faction }];
   });

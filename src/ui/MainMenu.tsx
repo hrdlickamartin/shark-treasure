@@ -70,7 +70,7 @@ export function MainMenu({ money, width, height, onPlay, onShop, onSettings, onL
     },
     {
       key: 'shaft',
-      label: shaftLocked ? 'Hlubina od 50 m' : shaftBest > 0 ? `Hlubina · ${shaftBest} m` : 'Hlubinný ponor',
+      label: shaftLocked ? 'Hlubina: dosáhni 50 m' : shaftBest > 0 ? `Hlubina · ${shaftBest} m` : 'Hlubinný ponor',
       icon: <Icon name="icon_o2" size={iconSize} />,
       variant: shaftLocked ? 'navy' : 'blue',
       disabled: shaftLocked,

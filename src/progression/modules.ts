@@ -46,6 +46,10 @@ export function slotCount(boatLevel: number): number {
   return 2 + Math.min(4, boatLevel);
 }
 
+export function slotBoatLevel(slot: ModuleSlot): number {
+  return Math.max(0, SLOTS.findIndex((s) => s.id === slot) - 1);
+}
+
 export function openSlots(boatLevel: number): ModuleSlot[] {
   return SLOTS.slice(0, slotCount(boatLevel)).map((s) => s.id);
 }

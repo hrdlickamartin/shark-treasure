@@ -1,4 +1,4 @@
-import { addCounts, type MaterialCounts } from '../game/gear';
+import { addCounts, MATERIAL_IDS, type MaterialCounts, type MaterialId } from '../game/gear';
 import { OCEAN_ORDER, OCEANS, type OceanId } from '../game/oceans';
 import { hash } from '../game/rng';
 import type { DiveResult, PropSpec } from '../game/types';
@@ -26,6 +26,14 @@ export const RIFT_LIFT = 200;
 
 export function expansionOn(save: SaveData): boolean {
   return save.flags.includes('expansion');
+}
+
+export function availableMaterials(save: SaveData): MaterialId[] {
+  return MATERIAL_IDS.filter((id) => save.oceans.some((o) => (OCEANS[o].materials[id] ?? 0) > 0));
+}
+
+export function contractsToday(save: SaveData, day: string) {
+  return contractsFor(day, expansionOn(save), availableMaterials(save));
 }
 
 export function portOn(save: SaveData): boolean {
@@ -174,7 +182,7 @@ export function applyTideDive(save: SaveData, result: DiveResult, day: string, w
   const kit = addCounts(save.kit, result.kitUsed, -1);
   const aquarium = aquariumOn ? [...new Set([...save.aquarium, ...result.scans.filter((s) => s.startsWith('net:')).map((s) => s.slice(4))])] : save.aquarium;
   const contracts = save.contracts.day === day ? save.contracts : { day, done: [] };
-  const met = contractsFor(day, expansionOn(save)).filter((c) => !contracts.done.includes(c.id) && c.kind !== 'materials' && contractMet(c, result, closed.length));
+  const met = contractsToday(save, day).filter((c) => !contracts.done.includes(c.id) && c.kind !== 'materials' && contractMet(c, result, closed.length));
   let reputation = save.reputation;
   let money = save.money;
   for (const c of met) {
@@ -248,7 +256,7 @@ export function moduleLocked(save: SaveData, id: ModuleId): boolean {
 export function buyModule(save: SaveData, id: ModuleId): SaveData | null {
   const def = MODULES[id];
   const price = modulePrice(save, id);
-  if (save.modules.owned.includes(id) || moduleLocked(save, id) || save.money < price || !affordable(save.materials, def.cost)) return null;
+  if (save.modules.owned.includes(id) || moduleLocked(save, id) || !openSlots(save.upgrades.boat).includes(def.slot) || save.money < price || !affordable(save.materials, def.cost)) return null;
   const free = !save.modules.equipped[def.slot] && openSlots(save.upgrades.boat).includes(def.slot);
   return {
     ...save,
@@ -276,7 +284,7 @@ export function equippedModules(boat: number, equipped: SaveData['modules']['equ
 }
 
 export function claimContract(save: SaveData, day: string, id: string): SaveData | null {
-  const contract = contractsFor(day, expansionOn(save)).find((c) => c.id === id);
+  const contract = contractsToday(save, day).find((c) => c.id === id);
   const contracts = save.contracts.day === day ? save.contracts : { day, done: [] };
   if (!contract || contract.kind !== 'materials' || !contract.materials || contracts.done.includes(id) || !affordable(save.materials, contract.materials)) return null;
   return {
