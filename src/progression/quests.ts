@@ -343,6 +343,20 @@ const MAIN_QUESTS: QuestDef[] = [
     briefing: [{ who: 'maya', text: 'Tvor není v katalogu. Vyfotíš ho? Z bezpečné vzdálenosti. Prosím.' }],
   },
   {
+    id: 'port_workshop',
+    ocean: 'arctic',
+    category: 'side',
+    giver: 'nora',
+    title: 'Dílna v přístavu',
+    brief: 'Maya potřebuje materiál ze dna, aby mohla v dílně postavit první výbavu.',
+    steps: [
+      { kind: 'materials', count: 2, label: 'Vylov v jednom ponoru 2 materiály' },
+      { kind: 'craft', label: 'Vyrob cokoli v dílně (Přístav → Dílna)' },
+    ],
+    reward: r(600, 100, 10, 0, { materials: { scrap: 2, rope: 2 } }),
+    debrief: [{ who: 'maya', text: 'Funguje! Z každého ponoru mi noste, co najdete na dně. Moduly na loď stojí za to.' }],
+  },
+  {
     id: 'arc_buoys',
     ocean: 'arctic',
     category: 'side',

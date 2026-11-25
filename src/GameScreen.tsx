@@ -10,7 +10,7 @@ import { OCEAN_ORDER, OCEANS, reefShift, weekIndex, WORLD_OCEANS, type OceanId }
 import { pipKey } from './game/systems/drone';
 import { cycleKit, applyKit } from './game/systems/kit';
 import { SLOTS, MODULES } from './progression/modules';
-import { activeModules, equippedModules, expansionOn, huntProps, riftProps, weeklyOcean, weeklySeed } from './progression/tides';
+import { activeModules, equippedModules, expansionOn, huntProps, portOn, riftProps, weeklyOcean, weeklySeed } from './progression/tides';
 import { Port } from './ui/Port';
 import { discountFor } from './progression/factions';
 import { Modes } from './ui/Modes';
@@ -103,6 +103,7 @@ export function GameScreen() {
     props: [...questProps(save.quests, save.oceans, save.flags, save.ocean), ...riftProps(save, save.ocean), ...huntProps(save, save.ocean)],
     supplies: save.supplies,
     expansion: expansionOn(save),
+    workshop: portOn(save),
     kit: save.kit,
     tideScale: save.settings.slowTide ? 1.5 : 1,
     reduceMotion: save.settings.reduceMotion,
@@ -492,7 +493,7 @@ export function GameScreen() {
                   <GameButton size={compactUi ? 'xs' : 'sm'} variant="blue" icon={<Icon name="icon_tank" size={20} />} label="Vylepšení" onPress={() => { setReturnTo('play'); setScreen('shop'); }} />
                   <GameButton size={compactUi ? 'xs' : 'sm'} variant="blue" icon={<Icon name="icon_story" size={20} />} label="Deník" onPress={() => { setReturnTo('play'); setScreen('logbook'); }} />
                   <GameButton size={compactUi ? 'xs' : 'sm'} variant="blue" icon={<Icon name="icon_map" size={20} />} label="Mapa" onPress={() => { setReturnTo('play'); setScreen('worldmap'); }} />
-                  {expansionOn(save) && <GameButton size={compactUi ? 'xs' : 'sm'} variant="gold" icon={<Icon name="icon_port" size={20} />} label="Přístav" onPress={() => { setReturnTo('play'); setScreen('port'); }} />}
+                  {portOn(save) && <GameButton size={compactUi ? 'xs' : 'sm'} variant="gold" icon={<Icon name="icon_port" size={20} />} label="Přístav" onPress={() => { setReturnTo('play'); setScreen('port'); }} />}
                 </View>
                 {todaysChallenge && !game.challenge && game.mode === 'sea' && (
                   <GameButton size={compactUi ? 'xs' : 'sm'} variant="gold" icon={<Icon name="icon_calendar" size={20} />} label={`Výzva dne ×${CHALLENGES[todaysChallenge].reward.toLocaleString('cs-CZ')}`} onPress={startChallenge} />

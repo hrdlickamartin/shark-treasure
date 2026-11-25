@@ -382,8 +382,9 @@ test('dílna: recept spotřebuje materiály, modifikace se nasadí a projeví ve
 });
 
 test('modul lodi: frakční modul vyžaduje Důvěryhodnou reputaci a projeví se ve statistikách', () => {
-  const rich = saveWith({ money: 20000, materials: { scrap: 10, rope: 10 }, upgrades: { ...EMPTY_LEVELS, boat: 1 } });
+  const rich = saveWith({ money: 20000, materials: { scrap: 10, rope: 10 }, upgrades: { ...EMPTY_LEVELS, boat: 1 }, flags: ['expansion'] });
   assert.equal(buyModule(rich, 'crane'), null);
+  assert.equal(buyModule({ ...rich, flags: [], reputation: { ...EMPTY_REPUTATION, guild: 400 } }, 'crane'), null, 'jeřáb na těžké truhly až s rozšířením');
   const trusted = { ...rich, reputation: { ...EMPTY_REPUTATION, guild: 400 } };
   const bought = buyModule(trusted, 'crane')!;
   assert.equal(bought.modules.equipped.stern, 'crane');
@@ -402,10 +403,10 @@ test('frakce: úlomek předaný Institutu přidá reputaci a sebere ji soupeři'
 });
 
 test('materiálová zakázka se odevzdá v přístavu jednou za den', () => {
-  const day = '2026-11-24';
-  const contract = contractsFor(day).find((c) => c.kind === 'materials');
-  if (!contract) return;
-  const save = saveWith({ materials: { scrap: 10, rope: 10, biogel: 10, alloy: 5 } });
+  const days = Array.from({ length: 30 }, (_, i) => `2026-11-${String(i + 1).padStart(2, '0')}`);
+  const day = days.find((d) => contractsFor(d, false).some((c) => c.kind === 'materials'))!;
+  const contract = contractsFor(day, false).find((c) => c.kind === 'materials')!;
+  const save = saveWith({ storyChapter: 1, materials: { scrap: 10, rope: 10, biogel: 10, alloy: 5 } });
   const next = claimContract(save, day, contract.id)!;
   assert.ok(next.reputation[contract.faction] > 0);
   assert.equal(claimContract(next, day, contract.id), null);

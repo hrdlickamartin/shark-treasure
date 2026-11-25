@@ -592,6 +592,7 @@ export interface GameState {
   entityId: number;
   variant: GameVariant;
   expansion: boolean;
+  workshop: boolean;
   tideScale: number;
   tideHigh: boolean;
   tideWarned: boolean;

@@ -20,7 +20,7 @@ Než upravíš kód v adresáři, přečti jeho `AGENTS.md`:
 - `tools/assets/` – pipeline spritů a pozadí → [`tools/assets/AGENTS.md`](tools/assets/AGENTS.md)
 - `tests/` – testy enginu a progrese → [`tests/AGENTS.md`](tests/AGENTS.md)
 
-Ostatní: `src/GameScreen.tsx` (orchestrátor), `src/hooks/` (herní smyčka, `Live`, klávesnice, gamepad), `src/audio/audio.ts` (hudba, efekty a ambient biomů přes `expo-audio`), `docs/` (plány rozšíření a rozhodnutí: `lost-oceans.md`, `story-bible.md`, `living-tides.md`; analýza vyvážení ekonomiky, bossů a obtížnosti `balance.md`; ruční testovací scénáře v `docs/test-cases/`). PDF v kořeni jsou zdrojové GDD, Story Bible a grafický manuál.
+Ostatní: `src/GameScreen.tsx` (orchestrátor), `src/hooks/` (herní smyčka, `Live`, klávesnice, gamepad), `src/audio/audio.ts` (hudba, efekty a ambient biomů přes `expo-audio`), `docs/` (plány rozšíření a rozhodnutí: `lost-oceans.md`, `story-bible.md`, `living-tides.md`; analýza vyvážení ekonomiky, bossů a obtížnosti `balance.md`; přístav od 2. kapitoly `port.md`; ruční testovací scénáře v `docs/test-cases/`). PDF v kořeni jsou zdrojové GDD, Story Bible a grafický manuál.
 
 ## Architektura
 
@@ -50,7 +50,7 @@ Web běží na GitHub Pages: https://hrdlickamartin.github.io/shark-treasure/. R
 
 `npx expo start --web` (port 8081). Telefony emuluj viewportem: Samsung S21 FE na výšku 412×891, na šířku 800×360; kompaktní telefon 740×320. Ovládání na webu: šipky/WASD, mezerník = ponor/sonar, E harpuna, B balón, R plašič, H lékárnička, F skútr, C fotoaparát, G Pip, Q výbava, X přepnout výbavu, Esc/P pauza (P je obsazené, nové akce na něj nedávej). Gamepad přes Web Gamepad API (`src/hooks/useGamepad.ts`).
 
-Rozšíření Živé proudy se odemkne až po konci kampaně (`save.ending` a příznak `expansion`); pro test v prohlížeči nastav save v `localStorage` (konec, `flags: ['expansion']`, `tideChapter`, oceány `riptide` a `wandering`). Celou `GameScreen` obaluje `ErrorBoundary` v `App.tsx`, takže chyba vykreslení skončí obrazovkou „Něco se pokazilo“, ne bílou stránkou – i tak každou chybu z konzole oprav.
+Přístav (zakázky, dílna, moduly lodi) a materiály se otevřou po dokončení Karibiku (`portOn`, `storyChapter >= 1`); prvky závislé na rozšíření mají v datech `expansion: true` a do té doby jsou zamčené (plán v `docs/port.md`). Rozšíření Živé proudy se odemkne až po konci kampaně (`save.ending` a příznak `expansion`); pro test v prohlížeči nastav save v `localStorage` (konec, `flags: ['expansion']`, `tideChapter`, oceány `riptide` a `wandering`). Celou `GameScreen` obaluje `ErrorBoundary` v `App.tsx`, takže chyba vykreslení skončí obrazovkou „Něco se pokazilo“, ne bílou stránkou – i tak každou chybu z konzole oprav.
 
 Stav hry je dostupný z prohlížeče přes React fiber: projdi `memoizedState` hooků od kořene a najdi ref, jehož `current` má `diver` a `chests`. Tím jde potápěč teleportovat (k truhle, na loď, napříč mapou) a cíleně vyzkoušet scénáře, na které náhodné hraní nedosáhne. Save je v `localStorage` pod klíčem `shark-treasure-save-v1`.
 

@@ -42,6 +42,7 @@ export interface WorldOptions {
   props?: PropSpec[];
   supplies?: Supplies;
   expansion?: boolean;
+  workshop?: boolean;
   variant?: GameVariant;
   kit?: KitCounts;
   seed?: number;
@@ -149,6 +150,7 @@ export function createGame(stats: Stats, view: View, boatX = 0, options: WorldOp
     entityId: 0,
     variant: options.variant ?? 'normal',
     expansion: !!options.expansion,
+    workshop: !!options.workshop,
     tideScale: options.tideScale ?? 1,
     tideHigh: true,
     tideWarned: false,

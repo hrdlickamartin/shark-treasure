@@ -28,6 +28,10 @@ export function expansionOn(save: SaveData): boolean {
   return save.flags.includes('expansion');
 }
 
+export function portOn(save: SaveData): boolean {
+  return expansionOn(save) || save.storyChapter >= 1;
+}
+
 export function hasFlag(save: SaveData, flag: string): boolean {
   if (flag === 'allies3') return FACTION_IDS.filter((f) => tierOf(save.reputation[f]) >= 3).length >= 3;
   if (flag.startsWith('rifts')) return save.rifts.closed >= Number(flag.slice(5));
@@ -170,7 +174,7 @@ export function applyTideDive(save: SaveData, result: DiveResult, day: string, w
   const kit = addCounts(save.kit, result.kitUsed, -1);
   const aquarium = aquariumOn ? [...new Set([...save.aquarium, ...result.scans.filter((s) => s.startsWith('net:')).map((s) => s.slice(4))])] : save.aquarium;
   const contracts = save.contracts.day === day ? save.contracts : { day, done: [] };
-  const met = contractsFor(day).filter((c) => !contracts.done.includes(c.id) && c.kind !== 'materials' && contractMet(c, result, closed.length));
+  const met = contractsFor(day, expansionOn(save)).filter((c) => !contracts.done.includes(c.id) && c.kind !== 'materials' && contractMet(c, result, closed.length));
   let reputation = save.reputation;
   let money = save.money;
   for (const c of met) {
@@ -179,7 +183,7 @@ export function applyTideDive(save: SaveData, result: DiveResult, day: string, w
   }
   const target = safariTarget(week);
   const safariDone = save.safari.week === week && save.safari.done;
-  const safari = !safariDone && result.photos.some((p) => p.species === target.species && p.behavior === target.behavior);
+  const safari = expansionOn(save) && !safariDone && result.photos.some((p) => p.species === target.species && p.behavior === target.behavior);
   if (safari) {
     money += SAFARI_REWARD.money;
     reputation = addReputation(reputation, 'institute', SAFARI_REWARD.rep);
@@ -211,7 +215,7 @@ export function applyTideDive(save: SaveData, result: DiveResult, day: string, w
 
 export function craft(save: SaveData, recipeId: string): SaveData | null {
   const recipe = recipeById(recipeId);
-  if (!recipe) return null;
+  if (!recipe || (recipe.expansion && !expansionOn(save))) return null;
   if (recipe.unlock && tierOf(save.reputation[recipe.unlock.faction]) < recipe.unlock.tier) return null;
   if (save.money < recipe.money || !affordable(save.materials, recipe.cost)) return null;
   const out = recipe.output;
@@ -236,8 +240,9 @@ export function modulePrice(save: SaveData, id: ModuleId): number {
 }
 
 export function moduleLocked(save: SaveData, id: ModuleId): boolean {
-  const faction = MODULES[id].faction;
-  return !!faction && tierOf(save.reputation[faction]) < 2;
+  const def = MODULES[id];
+  if (def.expansion && !expansionOn(save)) return true;
+  return !!def.faction && tierOf(save.reputation[def.faction]) < 2;
 }
 
 export function buyModule(save: SaveData, id: ModuleId): SaveData | null {
@@ -271,7 +276,7 @@ export function equippedModules(boat: number, equipped: SaveData['modules']['equ
 }
 
 export function claimContract(save: SaveData, day: string, id: string): SaveData | null {
-  const contract = contractsFor(day).find((c) => c.id === id);
+  const contract = contractsFor(day, expansionOn(save)).find((c) => c.id === id);
   const contracts = save.contracts.day === day ? save.contracts : { day, done: [] };
   if (!contract || contract.kind !== 'materials' || !contract.materials || contracts.done.includes(id) || !affordable(save.materials, contract.materials)) return null;
   return {

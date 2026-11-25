@@ -32,7 +32,7 @@ Pak zavolá `settle`, který:
 - nastaví příznaky;
 - zařadí dialogy do `pendingDialogs` (`debrief:`, `brief:`, `hook_`, `choice:`).
 
-Pro rozšíření volá `applyDive` navíc `applyTideDive` z `tides.ts` (materiály, spotřebovaná výbava, zakázky, safari, týdenní expedice, lov pokladů, trhliny podle konce kampaně). `settle` vyhodnocuje i cíle, které nevznikají v ponoru (`reputation`, `craft`, `rifts`), takže akce v přístavu ukládej přes `resettle`, jinak by se quest nedokončil.
+Od otevření přístavu (`portOn` v `tides.ts`: po Karibiku nebo s rozšířením) volá `applyDive` navíc `applyTideDive` (materiály, spotřebovaná výbava, zakázky; safari, týdenní expedice, lov pokladů a trhliny jen s rozšířením přes `expansionOn`). Recepty, moduly, zakázky a frakce s `expansion: true` jsou před rozšířením zamčené. Questy kampaně přidávají reputaci frakci zadavatele (`QUEST_PATRONS`), úvod přístavu je jednorázový dialog `port_intro` (i v `migrateSave`). `settle` vyhodnocuje i cíle, které nevznikají v ponoru (`reputation`, `craft`, `rifts`), takže akce v přístavu ukládej přes `resettle`, jinak by se quest nedokončil.
 
 Vrací nový save a `ResultSummary` pro obrazovku výsledku. Volby v dialozích jdou přes `applyChoice`, který končí také v `settle`.
 

@@ -37,7 +37,7 @@ Zdroj: `Shark_Treasure_The_Living_Tides_Rozsireni.pdf`. Navazuje na `docs/lost-o
 6. [x] Bossové: Vládce proudů, Dutá ulita, finále kapitoly 12
 7. [x] Materiály a crafting: sběr, výsledek ponoru, dílna, spotřební předměty v ponoru, modifikace
 8. [x] Moduly lodi: sloty, nákup, efekty, vrstvy na lodi, editor
-9. [x] Frakce a přístav: reputace, zakázky, předání úlomků, obrazovka přístavu
+9. [x] Frakce a přístav: reputace, zakázky, předání úlomků, obrazovka přístavu (přístav, dílna a materiály se později přesunuly do kampaně od 2. kapitoly, viz `port.md`)
 10. [x] Trhliny Srdce podle konce kampaně
 11. [x] Putující útes (pohyb oceánu, mapa světa)
 12. [x] Příběh: postavy Jun, Harlan, Pip; kapitoly 9–12, dialogy, varianty úvodu, konce rozšíření

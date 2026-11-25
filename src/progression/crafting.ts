@@ -46,6 +46,7 @@ export interface RecipeDef {
   cost: MaterialCounts;
   money: number;
   unlock?: { faction: FactionId; tier: number };
+  expansion?: boolean;
 }
 
 export const RECIPES: RecipeDef[] = [
@@ -63,14 +64,14 @@ export const RECIPES: RecipeDef[] = [
   { id: 'seal', output: { kind: 'mod', id: 'seal' }, cost: { obsidian: 2, ice: 2, scrap: 2 }, money: 2500 },
   { id: 'net', output: { kind: 'mod', id: 'net' }, cost: { rope: 3, alloy: 1 }, money: 2000 },
   { id: 'longshot', output: { kind: 'mod', id: 'longshot' }, cost: { scrap: 4, obsidian: 1 }, money: 2000 },
-  { id: 'magnet', output: { kind: 'mod', id: 'magnet' }, cost: { nacre: 2, alloy: 1 }, money: 2500 },
-  { id: 'tow', output: { kind: 'kit', id: 'tow', amount: 1 }, cost: { rope: 3, scrap: 1 }, money: 0, unlock: { faction: 'guild', tier: 1 } },
+  { id: 'magnet', output: { kind: 'mod', id: 'magnet' }, cost: { nacre: 2, alloy: 1 }, money: 2500, expansion: true },
+  { id: 'tow', output: { kind: 'kit', id: 'tow', amount: 1 }, cost: { rope: 3, scrap: 1 }, money: 0, unlock: { faction: 'guild', tier: 1 }, expansion: true },
   { id: 'trader', output: { kind: 'mod', id: 'trader' }, cost: { alloy: 2, nacre: 4 }, money: 6000, unlock: { faction: 'guild', tier: 4 } },
   { id: 'antidote', output: { kind: 'kit', id: 'antidote', amount: 1 }, cost: { biogel: 2, nacre: 1 }, money: 0, unlock: { faction: 'institute', tier: 1 } },
   { id: 'lens', output: { kind: 'mod', id: 'lens' }, cost: { alloy: 2, ice: 2 }, money: 6000, unlock: { faction: 'institute', tier: 4 } },
   { id: 'sprint', output: { kind: 'kit', id: 'sprint', amount: 1 }, cost: { scrap: 2, biogel: 1 }, money: 0, unlock: { faction: 'brotherhood', tier: 1 } },
   { id: 'racer', output: { kind: 'mod', id: 'racer' }, cost: { rope: 4, obsidian: 2 }, money: 6000, unlock: { faction: 'brotherhood', tier: 4 } },
-  { id: 'riftsuit', output: { kind: 'mod', id: 'riftsuit' }, cost: { alloy: 2, obsidian: 2 }, money: 4000, unlock: { faction: 'tidewatch', tier: 1 } },
+  { id: 'riftsuit', output: { kind: 'mod', id: 'riftsuit' }, cost: { alloy: 2, obsidian: 2 }, money: 4000, unlock: { faction: 'tidewatch', tier: 1 }, expansion: true },
 ];
 
 export const recipeById = (id: string) => RECIPES.find((r) => r.id === id);

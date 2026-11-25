@@ -48,7 +48,7 @@ Hraje se na telefonech v obou orientacích, na tabletech i na webu. Cílová za�
 | `Dialogue` | dialogy na lodi (`DialogueBox`) a rádio během ponoru (`RadioBubble`) |
 | `Ending` | volba konce příběhu |
 | `Settings`, `PauseMenu` | nastavení (včetně přístupnosti: méně pohybu, pomalejší příliv, tvary rarity, větší text) a pauza |
-| `Port` | přístav rozšíření: zakázky a frakce, dílna (recepty, modifikace), loď (sloty a moduly) |
+| `Port` | přístav od 2. kapitoly: zakázky a frakce, dílna (recepty, modifikace), loď (sloty a moduly); prvky rozšíření zamčené „po dohrání kampaně“, lov pokladů, safari, trhliny a Tidewatch jen s rozšířením |
 | `Modes` | režimy rozšíření: volný průzkum, týdenní a legendární expedice, lov pokladů, fotosafari |
 | `CollapseFrame` | praskající rám obrazovky při kolapsu jeskyně (bez čísla) |
 | `ErrorBoundary` | záchrana při chybě vykreslení, obaluje `GameScreen` v `App.tsx` |

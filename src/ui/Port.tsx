@@ -7,10 +7,10 @@ import { OCEANS, weekIndex } from '../game/oceans';
 import { Icon } from '../render/Sprite';
 import { CHARACTERS } from '../progression/characters';
 import { affordable, MOD_SLOTS, MODS, outputIcon, outputName, RECIPES, type ModId } from '../progression/crafting';
-import { contractsFor, FACTION_IDS, FACTIONS, SHARD_REWARDS, TIERS, tierOf, type FactionId } from '../progression/factions';
+import { contractsFor, FACTION_IDS, FACTIONS, factionsFor, SHARD_REWARDS, TIERS, tierOf, type FactionId } from '../progression/factions';
 import { MODULE_IDS, MODULES, openSlots, SLOTS, type ModuleId } from '../progression/modules';
 import type { SaveData } from '../progression/saveData';
-import { MAP_PIECE_PRICE, modulePrice, moduleLocked, RIFT_RULES, SAFARI_REWARD, safariTarget } from '../progression/tides';
+import { expansionOn, MAP_PIECE_PRICE, modulePrice, moduleLocked, RIFT_RULES, SAFARI_REWARD, safariTarget } from '../progression/tides';
 import type { useProgress } from '../progression/useProgress';
 import { GameButton } from './Button';
 import { MoneyPill, Overlay, Panel, Title } from './Panel';
@@ -32,6 +32,12 @@ const GREETINGS: Record<FactionId, [string, string, string]> = {
   brotherhood: ['Proud nečeká. Závodíš?', 'Bratrstvo ti fandí, kluku z Eliasovy lodi.', 'Kdo pluje s námi, má vždycky vítr v zádech.'],
   tidewatch: ['Trhliny jsou příležitost. Úlomky platíme dobře.', 'S tvými daty máme náskok.', 'Tentokrát s pojistkami. Slibujeme.'],
 };
+
+const AFTER_CAMPAIGN = 'Po dohrání kampaně (Živé proudy)';
+
+const leaderOf = (faction: FactionId, expansion: boolean) => CHARACTERS[faction === 'brotherhood' && !expansion ? 'rook' : FACTIONS[faction].leader];
+
+const callName = (name: string) => name.replace(/^(Kapitánka|Kapitán|Profesor|Profesorka|Doktor|Doktorka)\s+/, '').split(' ')[0];
 
 const TAB_LABEL: Record<Tab, string> = { contracts: 'Zakázky', workshop: 'Dílna', boat: 'Loď' };
 
@@ -65,6 +71,7 @@ function Contracts({ save, progress }: { save: SaveData; progress: Props['progre
   const week = weekIndex();
   const safari = safariTarget(week);
   const safariDone = save.safari.week === week && save.safari.done;
+  const expansion = expansionOn(save);
   return (
     <>
       {save.shards.pending > 0 && (
@@ -83,12 +90,12 @@ function Contracts({ save, progress }: { save: SaveData; progress: Props['progre
         </View>
       )}
       <Text style={styles.section}>Frakce</Text>
-      {FACTION_IDS.map((f) => {
+      {factionsFor(expansion).map((f) => {
         const def = FACTIONS[f];
         const points = save.reputation[f];
         const tier = tierOf(points);
         const next = TIERS[tier + 1];
-        const leader = CHARACTERS[def.leader];
+        const leader = leaderOf(f, expansion);
         return (
           <View key={f} style={[styles.card, { borderColor: def.color }]}>
             <View style={styles.cardHead}>
@@ -103,14 +110,14 @@ function Contracts({ save, progress }: { save: SaveData; progress: Props['progre
             </View>
             <Bar value={next ? (points - TIERS[tier].points) / (next.points - TIERS[tier].points) : 1} color={def.color} />
             <Text style={styles.quote}>
-              {leader.name.split(' ')[0]}: „{GREETINGS[f][tier >= 3 ? 2 : tier >= 1 ? 1 : 0]}“
+              {callName(leader.name)}: „{GREETINGS[f][tier >= 3 ? 2 : tier >= 1 ? 1 : 0]}“
             </Text>
             <Text style={styles.small}>Chce: {def.wants}. Odměny: {def.rewards}.</Text>
           </View>
         );
       })}
       <Text style={styles.section}>Dnešní zakázky</Text>
-      {contractsFor(day).map((c) => {
+      {contractsFor(day, expansion).map((c) => {
         const finished = done.includes(c.id);
         return (
           <View key={c.id} style={styles.row}>
@@ -130,6 +137,8 @@ function Contracts({ save, progress }: { save: SaveData; progress: Props['progre
           </View>
         );
       })}
+      {expansion && (
+        <>
       <Text style={styles.section}>Lov pokladů</Text>
       <View style={styles.row}>
         <Icon name="bottle_map" size={30} />
@@ -167,11 +176,14 @@ function Contracts({ save, progress }: { save: SaveData; progress: Props['progre
           </Text>
         </>
       )}
+        </>
+      )}
     </>
   );
 }
 
 function Workshop({ save, progress }: { save: SaveData; progress: Props['progress'] }) {
+  const expansion = expansionOn(save);
   const kits = Object.entries(save.kit) as [KitId, number][];
   return (
     <>
@@ -199,7 +211,8 @@ function Workshop({ save, progress }: { save: SaveData; progress: Props['progres
       )}
       <Text style={styles.section}>Recepty</Text>
       {RECIPES.map((r) => {
-        const locked = !!r.unlock && tierOf(save.reputation[r.unlock.faction]) < r.unlock.tier;
+        const later = !!r.expansion && !expansion;
+        const locked = later || (!!r.unlock && tierOf(save.reputation[r.unlock.faction]) < r.unlock.tier);
         const owned = r.output.kind === 'mod' && save.mods.owned.includes(r.output.id);
         const can = !locked && !owned && save.money >= r.money && affordable(save.materials, r.cost);
         const effect = r.output.kind === 'kit' ? KIT[r.output.id].effect : r.output.kind === 'mod' ? MODS[r.output.id].effect : 'Zásoba na příští ponor';
@@ -210,7 +223,7 @@ function Workshop({ save, progress }: { save: SaveData; progress: Props['progres
               <Text style={styles.rowTitle}>
                 {outputName(r.output)} {r.output.kind === 'mod' ? `• ${MOD_SLOTS.find((m) => m.id === MODS[r.output.id as ModId].slot)?.name}` : ''}
               </Text>
-              <Text style={styles.small}>{locked ? `Odemkne: ${FACTIONS[r.unlock!.faction].name} – ${TIERS[r.unlock!.tier].name}` : effect}</Text>
+              <Text style={styles.small}>{later ? AFTER_CAMPAIGN : locked ? `Odemkne: ${FACTIONS[r.unlock!.faction].name} – ${TIERS[r.unlock!.tier].name}` : effect}</Text>
               {!locked && !owned && <Cost cost={r.cost} have={save.materials} money={r.money} />}
             </View>
             {owned ? <Text style={styles.done}>Máš</Text> : <GameButton label="Vyrobit" size="xs" variant="green" disabled={!can} onPress={() => progress.craftItem(r.id)} />}
@@ -237,6 +250,7 @@ function Workshop({ save, progress }: { save: SaveData; progress: Props['progres
 }
 
 function Boat({ save, progress }: { save: SaveData; progress: Props['progress'] }) {
+  const expansion = expansionOn(save);
   const open = openSlots(save.upgrades.boat);
   return (
     <>
@@ -273,7 +287,7 @@ function Boat({ save, progress }: { save: SaveData; progress: Props['progress'] 
               <Text style={styles.rowTitle}>
                 {def.name} • {SLOTS.find((s) => s.id === def.slot)?.name}
               </Text>
-              <Text style={styles.small}>{locked ? `Odemkne: ${FACTIONS[def.faction!].name} – Důvěryhodný` : def.effect}</Text>
+              <Text style={styles.small}>{def.expansion && !expansion ? AFTER_CAMPAIGN : locked && def.faction ? `Odemkne: ${FACTIONS[def.faction].name} – Důvěryhodný` : def.effect}</Text>
               {!owned && !locked && <Cost cost={def.cost} have={save.materials} money={price} />}
             </View>
             {owned ? <Text style={styles.done}>Máš</Text> : <GameButton label="Koupit" size="xs" variant="gold" disabled={!can} onPress={() => progress.purchaseModule(id)} />}

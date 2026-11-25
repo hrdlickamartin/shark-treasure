@@ -40,7 +40,7 @@ Akce hráče jsou samostatné funkce volané z UI (`startDive`, `triggerSonar` v
 
 - Generování světa je deterministické podle `state.seed`: `generateChunk` bere `mulberry32(hash(seed, index, salt))`, terén `seabedY` a propast `shaftWalls` stejně. Ve vzhledu úseků proto nepoužívej `Math.random`, jinak se úsek po přegenerování změní.
 - Za běhu (chování žraloků, částice, události) je `Math.random` v pořádku.
-- Prvky rozšíření v úseku (`expansionChunk` ve `world.ts`) berou vlastní generátor `hash(seed, index, 6262)`. Nový obsah přidávej tam nebo s dalším vlastním saltem; sdílený generátor úseku by posunul rozložení původních oceánů a rozbil jejich testy férovosti.
+- Prvky rozšíření v úseku (`expansionChunk` ve `world.ts`) berou vlastní generátor `hash(seed, index, 6262)`. Běží i s `state.workshop` (přístav bez rozšíření), pak se z nich přidají jen materiály; náhodná čísla se berou ve stejném pořadí, podmínka `full` stojí až za voláním `r()`, aby se světy rozšíření nezměnily. Nový obsah přidávej tam nebo s dalším vlastním saltem; sdílený generátor úseku by posunul rozložení původních oceánů a rozbil jejich testy férovosti.
 - Pozice questových předmětů nezávisí na seedu, ale jen na oceánu a definici questu (`itemX`), takže přežijí přegenerování světa.
 
 ## Data místo kódu

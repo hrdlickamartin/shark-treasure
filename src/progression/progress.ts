@@ -1,9 +1,9 @@
 import { addCounts, type MaterialCounts } from '../game/gear';
 import { todayKey } from '../game/modifiers';
 import { OCEAN_ORDER, weekIndex, type OceanId } from '../game/oceans';
-import { addReputation, FACTION_IDS } from './factions';
+import { addReputation, FACTION_IDS, type FactionId } from './factions';
 import { equipped } from './modules';
-import { activeModules, applyTideDive, expansionOn, hasFlag } from './tides';
+import { activeModules, applyTideDive, hasFlag, portOn } from './tides';
 import type { DiveResult, RelicId, SharkKind } from '../game/types';
 import type { CharacterId } from './characters';
 import { dialogueFor } from './dialogue';
@@ -12,7 +12,7 @@ import { expeditionScale, shaftPearls } from './expedition';
 import { applyMissions, type MissionDef } from './missions';
 import { activeQuests, CHAPTER_COUNT, chapterOf, EMPTY_QUEST, oceansAfter, pendingChoice, progressQuest, questById, stepKey, stepsDone, type QuestDef } from './quests';
 import { explorerLevel, levelReward } from './research';
-import type { SaveData } from './saveData';
+import { PORT_INTRO, type SaveData } from './saveData';
 import { maxLevel, UPGRADES } from './upgrades';
 
 const MAX_BRIEFS = 3;
@@ -116,6 +116,9 @@ function metaProgress(save: SaveData, quests: Record<string, SaveData['quests'][
   return next;
 }
 
+export const CAMPAIGN_REPUTATION = 30;
+export const QUEST_PATRONS: Partial<Record<CharacterId, FactionId>> = { nora: 'guild', rook: 'brotherhood', idris: 'institute', maya: 'institute' };
+
 export function settle(before: SaveData, incoming: Record<string, SaveData['quests'][string]>): Settlement {
   const quests = metaProgress(before, incoming);
   const completed = Object.keys(quests)
@@ -148,6 +151,8 @@ export function settle(before: SaveData, incoming: Record<string, SaveData['ques
     if (quest.reward.materials) materials = addCounts(materials, quest.reward.materials);
     if (quest.reward.kit) kit = addCounts(kit, quest.reward.kit);
     if (quest.reward.reputation) reputation = addReputation(reputation, quest.reward.reputation.faction, quest.reward.reputation.amount);
+    const patron = quest.chapter ? undefined : QUEST_PATRONS[quest.giver];
+    if (patron) reputation = addReputation(reputation, patron, CAMPAIGN_REPUTATION);
     if (quest.unlocks) unlockedOceans.push(quest.unlocks);
     dialogs.push(`debrief:${quest.id}`);
     if (quest.chapterEnd && quest.chapter) {
@@ -157,6 +162,10 @@ export function settle(before: SaveData, incoming: Record<string, SaveData['ques
       storyChapter = Math.max(storyChapter, chapterOf(quest) + 1);
       dialogs.push(`hook_${chapterOf(quest)}`);
     }
+  }
+  if (storyChapter >= 1 && !flags.has(PORT_INTRO)) {
+    if (!flags.has('expansion')) dialogs.push(PORT_INTRO);
+    flags.add(PORT_INTRO);
   }
   const oceans = [...new Set([...before.oceans, ...oceansAfter(storyChapter), ...unlockedOceans])];
   const flagList = [...flags];
@@ -244,7 +253,7 @@ export function applyDive(current: SaveData, result: DiveResult): { save: SaveDa
       chests: current.stats.chests + (result.success ? result.chests.length : 0),
     },
   };
-  const tide = expansionOn(current) && !free ? applyTideDive(base, result, todayKey(), weekIndex(), equipped(activeModules(current), 'aquarium')) : null;
+  const tide = portOn(current) && !free ? applyTideDive(base, result, todayKey(), weekIndex(), equipped(activeModules(current), 'aquarium')) : null;
   const settled = settle(tide ? tide.save : base, quests);
   const beforeLevel = explorerLevel(current.xp);
   const afterLevel = explorerLevel(settled.save.xp);

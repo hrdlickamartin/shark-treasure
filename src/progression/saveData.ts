@@ -150,7 +150,7 @@ export function migrateSave(raw: unknown): SaveData {
   const oceans = WORLD_OCEANS.filter((id) => (parsed.oceans ?? []).includes(id) || (OCEAN_ORDER.includes(id) && OCEAN_ORDER.indexOf(id) <= chapter));
   const ending = parsed.ending ? (OLD_ENDINGS[parsed.ending] ?? parsed.ending) : null;
   const expansionNew = version < 5 && !!ending;
-  return {
+  return withPortIntro({
     ...DEFAULT_SAVE,
     ...rest,
     version: SAVE_VERSION,
@@ -187,7 +187,15 @@ export function migrateSave(raw: unknown): SaveData {
     aquarium: [...(parsed.aquarium ?? [])],
     tideChapter: expansionNew ? 9 : (parsed.tideChapter ?? 0),
     tideEnding: parsed.tideEnding ?? null,
-  };
+  });
+}
+
+export const PORT_INTRO = 'port_intro';
+
+function withPortIntro(save: SaveData): SaveData {
+  if (save.storyChapter < 1 || save.flags.includes(PORT_INTRO)) return save;
+  const fresh = !save.flags.includes(EXPANSION_FLAG);
+  return { ...save, flags: [...save.flags, PORT_INTRO], pendingDialogs: fresh ? [...save.pendingDialogs, PORT_INTRO] : save.pendingDialogs };
 }
 
 function legacyQuests(old: Record<string, QuestState>, chapter: number): Record<string, QuestState> {

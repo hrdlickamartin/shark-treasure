@@ -47,6 +47,11 @@ const SCRIPTS: Record<string, Line[]> = {
     { who: 'nora', text: 'Loď drží pohromadě jen silou vůle a Mayiných svárů. Technologie je pryč. Ale vy jste tady.' },
     { who: 'maya', text: 'Začneme dílnou. Ze šrotu a lan se dá postavit víc, než si myslíš. A pak zjistíme, proč se proudy otáčejí.' },
   ],
+  port_intro: [
+    { who: 'nora', text: 'Port Royal ti otevřel molo. Cech, Institut i Bratrstvo tam vyvěšují zakázky – a platí reputací, ne jen penězi.' },
+    { who: 'maya', text: 'A já mám v podpalubí dílnu. Šrot, lana a perleť ze dna mi nos v ponorech, postavím z nich výbavu i moduly na loď.' },
+    { who: 'maya', text: 'Najdeš to na lodi pod tlačítkem Přístav.' },
+  ],
   tide_hook_8: [{ who: 'jun', text: 'Úžina proudů je otevřená. Kotviště Tern, molo tří frakcí. Najdeme tam i Harlana – Eliasova starého parťáka.' }],
   tide_hook_9: [{ who: 'maya', text: 'Stopa krunýře vede k útesu, který se hýbe. Jun mu říká Putující útes. Je na zádech Strážce proudů.' }],
   tide_hook_10: [{ who: 'harlan', text: 'Klíč je tvůj. Srdeční jeskyně čeká. A s ní i všechny trhliny, které Srdce otevřelo.' }],
