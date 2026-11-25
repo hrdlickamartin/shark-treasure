@@ -1,15 +1,15 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { CHEST_WEIGHTS, CHESTS, SHARKS } from '../src/game/catalog';
+import { CHEST_WEIGHTS, CHESTS, SHARKS, SHARKS_PER_CHUNK } from '../src/game/catalog';
 import { createGame, step } from '../src/game/engine';
 import { OCEAN_ORDER, OCEANS, type OceanId } from '../src/game/oceans';
 import { regionIndexAt } from '../src/game/regions';
 import { startDive } from '../src/game/systems/dive';
 import type { DiveResult, GameState, Input } from '../src/game/types';
-import { bossChestValue, generateChunk, LEGENDARY_HP } from '../src/game/world';
+import { bossChestValue, depthBonus, generateChunk, LEGENDARY_HP, tierValue } from '../src/game/world';
 import { canEmbark, embarkChapter, embarkEarnings, embarkSave } from '../src/progression/embark';
 import { applyDive, bossTrophies } from '../src/progression/progress';
-import { CHAPTER_COUNT } from '../src/progression/quests';
+import { CHAPTER_COUNT, QUESTS } from '../src/progression/quests';
 import { DEFAULT_SAVE, migrateSave, type SaveData } from '../src/progression/saveData';
 import { EMPTY_LEVELS, maxLevel, nextStoryChapter, statsFor, SUPPLY_LIMIT, supplyPrice, UPGRADES, upgradeCost, type UpgradeLevels } from '../src/progression/upgrades';
 
@@ -157,4 +157,45 @@ test('nejhlubší lokace Karibiku vynáší méně než nejhlubší lokace Arkti
   assert.ok(deepest < regionValue('arctic', 4), 'Karibik nepřebije ani předposlední lokaci Arktidy');
   assert.ok(bossChestValue('caribbean') < bossChestValue('arctic'));
   assert.ok(bossChestValue('abyss') > bossChestValue('arctic'));
+});
+
+test('každá hlubší lokace má cennější truhly než ta před ní', () => {
+  for (const id of [...OCEAN_ORDER, 'riptide', 'wandering'] as OceanId[]) {
+    const regions = OCEANS[id].regions;
+    const values = regions.map((region, i) => tierValue(region.tier) * (region.lootScale ?? 1) * depthBonus(regions, i));
+    values.slice(1).forEach((value, i) => assert.ok(value > values[i], `${id} L${i + 1}: ${Math.round(value)} ≤ ${Math.round(values[i])}`));
+  }
+  assert.ok(regionValue('arctic', 3) > regionValue('arctic', 2), 'Arktida L3 už nevynáší míň než L2');
+});
+
+function sharksIn(ocean: OceanId, region: number): number {
+  let sharks = 0;
+  let chunks = 0;
+  for (let seed = 1; seed <= 8; seed++) {
+    const state = world(ocean, seed);
+    state.sharks = [];
+    for (let i = -40; i <= 40; i++) {
+      generateChunk(state, i);
+      if (regionIndexAt(OCEANS[ocean].regions, i * 480 + 240) === region) chunks += 1;
+    }
+    sharks += state.sharks.filter((s) => regionIndexAt(OCEANS[ocean].regions, s.x) === region).length;
+  }
+  return sharks / chunks;
+}
+
+test('žraloků s hloubkou přibývá plynule, bez skoku mezi Pirate Bay a Blue Hole', () => {
+  SHARKS_PER_CHUNK.slice(2).forEach((count, i) => assert.ok(count - SHARKS_PER_CHUNK[i + 1] <= 0.4, `tier ${i + 2}`));
+  const bay = sharksIn('caribbean', 1);
+  const hole = sharksIn('caribbean', 2);
+  assert.ok(hole > bay, 'hlouběji je pořád víc žraloků');
+  assert.ok(hole < bay * 2.5, `Pirate Bay ${bay.toFixed(2)} → Blue Hole ${hole.toFixed(2)}`);
+});
+
+test('Arktida má vedlejší questy a úkol s kosatkou přidá harpunu jen do stropu kapitoly', () => {
+  assert.ok(QUESTS.filter((q) => q.ocean === 'arctic').length >= 9);
+  const save = saveWith({ storyChapter: 1, oceans: ['caribbean', 'arctic'], quests: { first_dive: { done: true, progress: 0, flags: [] }, arc_station: { done: true, progress: 0, flags: [] } }, upgrades: { ...EMPTY_LEVELS, harpoon: 4 } });
+  const { save: next, summary } = applyDive(save, { ...emptyResult('arctic'), photos: [{ species: 'orca', stars: 2 }] });
+  assert.ok(next.quests.arc_orca.done);
+  assert.ok(summary.quests.some((q) => q.id === 'arc_orca'));
+  assert.equal(next.upgrades.harpoon, 4, 'strop harpuny v kapitole 1 je 4');
 });

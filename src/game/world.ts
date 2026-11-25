@@ -1,5 +1,5 @@
 import type { SpriteName } from '../render/spriteAssets';
-import { CHEST_CHANCE, CHEST_WEIGHTS, CHESTS, SHARK_HUNTER_CHANCE, SHARK_KINDS_BY_REGION, SHARKS } from './catalog';
+import { CHEST_CHANCE, CHEST_WEIGHTS, CHESTS, SHARK_HUNTER_CHANCE, SHARK_KINDS_BY_REGION, SHARKS, SHARKS_PER_CHUNK } from './catalog';
 import { CHUNK_W, SURFACE_SAFE } from './constants';
 import { bossChunks, OCEAN_ORDER, oceanOf, type OceanId } from './oceans';
 import { DEFAULT_FRONT, regionIndexAt, type Region } from './regions';
@@ -55,10 +55,30 @@ function chestKindFor(r: Rng, regionId: number): ChestKind {
   return weighted<ChestKind>(r, CHEST_WEIGHTS[regionId]);
 }
 
+export const DEPTH_STEP = 1.12;
+
+export function tierValue(tier: number): number {
+  const weights = CHEST_WEIGHTS[Math.min(CHEST_WEIGHTS.length - 1, tier)];
+  const total = Object.values(weights).reduce((sum, w) => sum + (w ?? 0), 0);
+  return Object.entries(weights).reduce((sum, [kind, w]) => sum + ((CHESTS[kind as ChestKind].min + CHESTS[kind as ChestKind].max) / 2) * (w ?? 0), 0) / total;
+}
+
+export function depthBonus(regions: Region[], regionId: number): number {
+  let previous = 0;
+  let bonus = 1;
+  for (let i = 0; i <= regionId; i++) {
+    const base = tierValue(regions[i].tier) * (regions[i].lootScale ?? 1);
+    const value = Math.max(base, previous * DEPTH_STEP);
+    bonus = value / base;
+    previous = value;
+  }
+  return bonus;
+}
+
 function createChest(r: Rng, seed: number, regions: Region[], id: string, x: number, kind: ChestKind, regionId: number): Chest {
   const info = CHESTS[kind];
   const restY = seabedY(seed, x, regions) - info.width * 0.32;
-  const scale = (kind === 'heavy' ? 1 + regions[regionId].tier * 0.3 : 1) * (regions[regionId].lootScale ?? 1);
+  const scale = (kind === 'heavy' ? 1 + regions[regionId].tier * 0.3 : 1) * (regions[regionId].lootScale ?? 1) * depthBonus(regions, regionId);
   return {
     id,
     kind,
@@ -372,7 +392,8 @@ export function generateChunk(state: GameState, index: number): Chunk {
   }
 
   if (distance > 2 && tier > 0 && !boss) {
-    const sharkCount = tier === 1 ? (r() < 0.45 ? 1 : 0) : 1 + (r() < 0.25 + tier * 0.08 ? 1 : 0);
+    const expected = SHARKS_PER_CHUNK[Math.min(tier, SHARKS_PER_CHUNK.length - 1)];
+    const sharkCount = Math.floor(expected) + (r() < expected % 1 ? 1 : 0);
     for (let s = 0; s < sharkCount; s++) {
       const kind = weighted<SharkKind>(r, region.sharks ?? ocean.sharks ?? SHARK_KINDS_BY_REGION[tier]);
       const sx = x0 + between(r, 40, CHUNK_W - 40);

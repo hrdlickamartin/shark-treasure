@@ -71,7 +71,8 @@ export const SHARK_KINDS_BY_REGION: Partial<Record<SharkKind, number>>[] = [
   { great: 40, deep: 60 },
 ];
 
-export const SHARK_HUNTER_CHANCE = [0, 0.3, 0.5, 0.6, 0.7, 0.8, 0.85, 0.9];
+export const SHARK_HUNTER_CHANCE = [0, 0.3, 0.4, 0.55, 0.7, 0.8, 0.85, 0.9];
+export const SHARKS_PER_CHUNK = [0, 0.65, 0.9, 1.2, 1.57, 1.65, 1.73, 1.81];
 export const CHEST_CHANCE = [0.6, 0.62, 0.62, 0.66, 0.7, 0.75, 0.8, 0.85];
 
 export const HAZARD_DAMAGE = { jelly: 9, mine: 34, urchin: 7, eel: 14, debris: 12, crab: 8, angler: 20, ray: 15, toxic: 7, spikes: 12, barracuda: 9, siphon: 8, pistol: 5, shadow: 14, collapse: 12 };

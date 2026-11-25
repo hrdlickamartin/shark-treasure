@@ -205,8 +205,8 @@ Doporučení: Karibik L2 na ~0,6 žraloka na úsek (`CHUNK_THREATS` v `density.t
 - Neopren od 6. úrovně, termooblek od 4. a pojištění od 4. dávají o něco méně než dřív (křivka nad původním stropem je pozvolnější, aby každá další úroveň něco přidala). Týká se jen savů z pozdějších výprav.
 - Ploutve nad 5. úrovní zrychlují o 8 bodů místo 16, aby potápěč neprolétal stropy jeskyní.
 
-### Zbývá (bez rozhodnutí)
+### Druhé kolo (25. 11. 2026)
 
-- E3 – hlubší lokace se stejným tierem nevynáší víc (návrh: bonus za hloubku 5 $/m pod 50 m).
-- E4 – Arktida má málo questů (návrh: 2–3 vedlejší questy).
-- D1 – skok počtu žraloků mezi Karibikem L1 a L2 (návrh: snížit hustotu na L2, rádiová rada před první lokací se žraloky).
+12. [x] **Hlubší lokace vynáší víc** (E3): `depthBonus` ve `world.ts` zvedne hodnotu truhel tak, aby očekávaná truhla každé lokace byla aspoň o 12 % cennější než v lokaci před ní (rarita podle `tier` zůstává). Například Arktida 146 / 217 / 369 / 414 / 671 / 840 $, Atlantida 671 / 840 / 941 / 1 053 / 1 180 / 1 321 $. Test: „každá hlubší lokace má cennější truhly než ta před ní“.
+13. [x] **Arktida má víc questů** (E4): Ztracené bóje (Nora, sonar), Kosatky pod ledem (Maya, foto kosatky, odměna harpuna +1), Lékárny stanice (Nora, 2 předměty), Polární kořist (Rook, 3 truhly v ponoru). Arktida má 9 questů místo 5.
+14. [x] **Žraloci přibývají plynule** (D1): `SHARKS_PER_CHUNK` v `catalog.ts` místo skoku z 0,45 na 1,41 žraloka na úsek; šance na lovce v tieru 2–3 nižší. Karibik L1–L3 dřív 0,29 / 1,20 / 1,10, teď 0,42 / 0,89 / 1,03 žraloka na úsek.
